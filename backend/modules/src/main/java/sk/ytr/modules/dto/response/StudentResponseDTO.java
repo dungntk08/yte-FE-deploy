@@ -1,0 +1,68 @@
+package sk.ytr.modules.dto.response;
+
+import jakarta.persistence.Entity;
+import lombok.*;
+import sk.ytr.modules.constant.GenderTypeEnum;
+import sk.ytr.modules.entity.Student;
+
+import java.util.Date;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class StudentResponseDTO {
+
+    /** ID học sinh */
+    private Long id;
+
+    /** ID đợt khám */
+    private Long campaignId;
+
+    /** Họ và tên học sinh */
+    private String fullName;
+
+    /** Giới tính (MALE / FEMALE) */
+    private GenderTypeEnum gender;
+
+    /** Ngày sinh */
+    private Date dob;
+
+    /** Địa chỉ học sinh */
+    private String address;
+
+    /** CCCD / mã định danh */
+    private String identityNumber;
+
+    /** Cân nặng (kg) */
+    private Double weight;
+
+    /** Chiều cao (cm) */
+    private Double height;
+
+    /** Nội dung thông báo về gia đình */
+    private String notifyFamily;
+
+    public static StudentResponseDTO fromEntity(Student student) {
+        if (student == null) {
+            return null;
+        }
+
+        return StudentResponseDTO.builder()
+                .id(student.getId())
+                .campaignId(
+                        student.getCampaign() != null
+                                ? student.getCampaign().getId()
+                                : null
+                )
+                .fullName(student.getFullName())
+                .gender(student.getGender())
+                .dob(student.getDob())
+                .address(student.getAddress())
+                .identityNumber(student.getIdentityNumber())
+                .weight(student.getWeight())
+                .height(student.getHeight())
+                .notifyFamily(student.getNotifyFamily())
+                .build();
+    }
+}
