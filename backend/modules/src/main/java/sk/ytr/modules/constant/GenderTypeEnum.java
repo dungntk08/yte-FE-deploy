@@ -1,33 +1,36 @@
 package sk.ytr.modules.constant;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
+
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public enum GenderTypeEnum {
+
     MALE(1, "Con trai"),
-    FEMALE(2, "Con gái"),
-    ;
+    FEMALE(2, "Con gái");
 
     @JsonValue
-    private Integer code;
-    private String description;
+    private final Integer code;
+    private final String description;
+
+    GenderTypeEnum(Integer code, String description) {
+        this.code = code;
+        this.description = description;
+    }
 
     public static GenderTypeEnum fromCode(Integer code) {
-        return Arrays.asList(values()).stream()
-                .filter(t -> t.getCode() == (code))
+        return Arrays.stream(values())
+                .filter(t -> t.code.equals(code))
                 .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("code = " + code + " isn't defined!!!"));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Gender code = " + code + " isn't defined!!!"));
     }
 
-    public static boolean contains(String code) {
+    public static boolean containsDescription(String description) {
         return Arrays.stream(values())
-                .anyMatch(t ->t.getDescription().equalsIgnoreCase(code));
+                .anyMatch(t -> t.description.equalsIgnoreCase(description));
     }
 }
+

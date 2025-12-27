@@ -1,35 +1,36 @@
 package sk.ytr.modules.constant;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 public enum CampaignStatusEnum {
+
     DRAFT(1, "Nháp"),
     IN_PROGRESS(2, "Đang tiến hành"),
-    CLOSED(3, "Đã đóng"),
-    ;
+    CLOSED(3, "Đã đóng");
 
     @JsonValue
-    private Integer code;
-    private String description;
+    private final Integer code;
+    private final String description;
 
-    public static CampaignStatusEnum fromCode(Integer code) {
-        return Arrays.asList(values()).stream()
-                .filter(t -> t.getCode() == (code))
-                .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("code = " + code + " isn't defined!!!"));
+    CampaignStatusEnum(Integer code, String description) {
+        this.code = code;
+        this.description = description;
     }
 
-    public static boolean contains(String code) {
+    public static CampaignStatusEnum fromCode(Integer code) {
         return Arrays.stream(values())
-                .anyMatch(t ->t.getDescription().equalsIgnoreCase(code));
+                .filter(t -> t.code.equals(code))
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException("code = " + code + " isn't defined!!!"));
+    }
+
+    public static boolean containsDescription(String description) {
+        return Arrays.stream(values())
+                .anyMatch(t -> t.description.equalsIgnoreCase(description));
     }
 }
