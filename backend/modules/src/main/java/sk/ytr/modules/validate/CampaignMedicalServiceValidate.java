@@ -1,13 +1,16 @@
 package sk.ytr.modules.validate;
 
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import sk.ytr.modules.dto.request.MedicalCampaignRequestDTO;
 import sk.ytr.modules.repository.MedicalCampaignRepository;
 import sk.ytr.modules.repository.SchoolRepository;
 
 @Slf4j
-@AllArgsConstructor
+@Component
+@RequiredArgsConstructor
 public class CampaignMedicalServiceValidate {
 
     private final MedicalCampaignRepository medicalCampaignRepository;

@@ -42,22 +42,28 @@ public class MedicalIndicatorServiceImpl implements MedicalIndicatorService {
             return MedicalIndicatorResponseDTO.fromEntity(indicator);
 
         } catch (Exception e) {
-            throw new RuntimeException("Tạo chỉ tiêu khám thất bại");
+            throw new RuntimeException("Tạo chỉ tiêu khám thất bại: " + e.getMessage());
         }
     }
 
     @Override
     public MedicalIndicatorResponseDTO update(Long id, MedicalIndicatorRequestDTO request) {
-        medicalIndicatorServiceValidate.validateCreateRequest(request);
-        MedicalIndicator indicator = medicalIndicatorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy chỉ tiêu"));
+        try {
 
-        indicator.setIndicatorName(request.getIndicatorName());
-        indicator.setDisplayOrder(request.getDisplayOrder());
-        indicator.setIsActive(request.getIsActive());
+            medicalIndicatorServiceValidate.validateCreateRequest(request);
+            MedicalIndicator indicator = medicalIndicatorRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chỉ tiêu"));
 
-        medicalIndicatorRepository.save(indicator);
-        return MedicalIndicatorResponseDTO.fromEntity(indicator);
+            indicator.setIndicatorName(request.getIndicatorName());
+            indicator.setDisplayOrder(request.getDisplayOrder());
+            indicator.setIsActive(request.getIsActive());
+
+            medicalIndicatorRepository.save(indicator);
+            return MedicalIndicatorResponseDTO.fromEntity(indicator);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Cập nhật chỉ tiêu khám thất bại: " + e.getMessage());
+        }
     }
 
     @Override

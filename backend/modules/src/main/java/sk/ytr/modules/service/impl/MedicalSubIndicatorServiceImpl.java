@@ -35,7 +35,7 @@ public class MedicalSubIndicatorServiceImpl implements MedicalSubIndicatorServic
             );
         } catch (Exception e) {
             log.error("Lỗi tạo chỉ số con", e);
-            throw new RuntimeException("Tạo chỉ số con thất bại");
+            throw new RuntimeException("Tạo chỉ số con thất bại: " + e.getMessage());
         }
     }
 
@@ -56,7 +56,7 @@ public class MedicalSubIndicatorServiceImpl implements MedicalSubIndicatorServic
             );
         } catch (Exception e) {
             log.error("Lỗi cập nhật chỉ số con", e);
-            throw new RuntimeException("Cập nhật chỉ số con thất bại");
+            throw new RuntimeException("Cập nhật chỉ số con thất bại: " + e.getMessage());
         }
     }
 
@@ -73,7 +73,7 @@ public class MedicalSubIndicatorServiceImpl implements MedicalSubIndicatorServic
             medicalSubIndicatorRepository.deleteById(id);
         } catch (Exception e) {
             log.error("Lỗi xóa chỉ số con", e);
-            throw new RuntimeException("Xóa chỉ số con thất bại");
+            throw new RuntimeException("Xóa chỉ số con thất bại: " + e.getMessage());
         }
     }
 

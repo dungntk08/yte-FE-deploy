@@ -1,9 +1,11 @@
 package sk.ytr.modules.validate;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import sk.ytr.modules.dto.request.MedicalGroupRequestDTO;
 import sk.ytr.modules.repository.MedicalGroupRepository;
 
+@Component
 @RequiredArgsConstructor
 public class MedicalGroupServiceValidate {
 

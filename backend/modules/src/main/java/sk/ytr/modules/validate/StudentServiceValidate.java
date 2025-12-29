@@ -1,12 +1,14 @@
 package sk.ytr.modules.validate;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import sk.ytr.modules.dto.request.StudentRequestDTO;
 import sk.ytr.modules.repository.MedicalCampaignRepository;
 import sk.ytr.modules.repository.StudentRepository;
 
 import java.util.Date;
 
+@Component
 @RequiredArgsConstructor
 public class StudentServiceValidate {
 
