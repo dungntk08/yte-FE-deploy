@@ -1,6 +1,5 @@
 package sk.ytr.modules.dto.response;
 
-import jakarta.persistence.Entity;
 import lombok.*;
 import sk.ytr.modules.constant.CampaignStatusEnum;
 import sk.ytr.modules.entity.MedicalCampaign;

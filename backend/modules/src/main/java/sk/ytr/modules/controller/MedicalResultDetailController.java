@@ -1,9 +1,8 @@
 package sk.ytr.modules.controller;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-        import sk.ytr.modules.dto.request.MedicalResultDetailRequestDTO;
+import sk.ytr.modules.dto.request.MedicalResultDetailRequestDTO;
 import sk.ytr.modules.dto.response.MedicalResultDetailResponseDTO;
 import sk.ytr.modules.service.MedicalResultDetailService;
 
@@ -11,11 +10,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/medical-result-details")
-@RequiredArgsConstructor
+@CrossOrigin
 @Slf4j
 public class MedicalResultDetailController {
 
-    private final MedicalResultDetailService service;
+    private MedicalResultDetailService service;
 
     @PostMapping
     public MedicalResultDetailResponseDTO create(

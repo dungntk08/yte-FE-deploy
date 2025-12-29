@@ -1,22 +1,20 @@
 package sk.ytr.modules.controller;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import sk.ytr.modules.dto.request.CampaignMedicalConfigRequestDTO;
 import sk.ytr.modules.dto.request.MedicalCampaignRequestDTO;
-import sk.ytr.modules.dto.response.CampaignMedicalConfigResponseDTO;
 import sk.ytr.modules.dto.response.MedicalCampaignResponseDTO;
-import sk.ytr.modules.service.CampaignMedicalConfigService;
 import sk.ytr.modules.service.MedicalCampaignService;
 
 import java.util.List;
 @RestController
 @RequestMapping("/api/medical-campaigns")
-@RequiredArgsConstructor
+@CrossOrigin
 @Slf4j
 public class MedicalCampaignController {
 
-    private final MedicalCampaignService service;
+    private MedicalCampaignService service;
 
     @PostMapping
     public MedicalCampaignResponseDTO create(

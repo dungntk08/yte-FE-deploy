@@ -10,11 +10,11 @@ import sk.ytr.modules.service.MedicalSubIndicatorService;
 import java.util.List;
 @RestController
 @RequestMapping("/api/medical-sub-indicators")
-@RequiredArgsConstructor
+@CrossOrigin
 @Slf4j
 public class MedicalSubIndicatorController {
 
-    private final MedicalSubIndicatorService service;
+    private MedicalSubIndicatorService service;
 
     @PostMapping
     public MedicalSubIndicatorResponseDTO create(

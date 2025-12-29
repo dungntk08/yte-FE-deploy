@@ -11,11 +11,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/medical-groups")
-@RequiredArgsConstructor
+@CrossOrigin
 @Slf4j
 public class MedicalGroupController {
 
-    private final MedicalGroupService service;
+    private MedicalGroupService service;
 
     @PostMapping
     public MedicalGroupResponseDTO create(
