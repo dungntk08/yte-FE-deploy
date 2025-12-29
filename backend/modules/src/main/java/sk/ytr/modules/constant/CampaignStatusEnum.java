@@ -8,20 +8,20 @@ import java.util.Arrays;
 @Getter
 public enum CampaignStatusEnum {
 
-    DRAFT(1, "Nháp"),
-    IN_PROGRESS(2, "Đang tiến hành"),
-    CLOSED(3, "Đã đóng");
+    DRAFT("DRAFT", "Nháp"),
+    IN_PROGRESS("IN_PROGRESS", "Đang tiến hành"),
+    CLOSED("CLOSED", "Đã đóng");
 
     @JsonValue
-    private final Integer code;
+    private final String code;
     private final String description;
 
-    CampaignStatusEnum(Integer code, String description) {
+    CampaignStatusEnum(String code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    public static CampaignStatusEnum fromCode(Integer code) {
+    public static CampaignStatusEnum fromCode(String code) {
         return Arrays.stream(values())
                 .filter(t -> t.code.equals(code))
                 .findFirst()

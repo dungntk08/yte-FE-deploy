@@ -8,19 +8,19 @@ import java.util.Arrays;
 @Getter
 public enum GenderTypeEnum {
 
-    MALE(1, "Con trai"),
-    FEMALE(2, "Con gái");
+    MALE("MALE", "Con trai"),
+    FEMALE("FEMALE", "Con gái");
 
     @JsonValue
-    private final Integer code;
+    private final String code;
     private final String description;
 
-    GenderTypeEnum(Integer code, String description) {
+    GenderTypeEnum(String code, String description) {
         this.code = code;
         this.description = description;
     }
 
-    public static GenderTypeEnum fromCode(Integer code) {
+    public static GenderTypeEnum fromCode(String code) {
         return Arrays.stream(values())
                 .filter(t -> t.code.equals(code))
                 .findFirst()

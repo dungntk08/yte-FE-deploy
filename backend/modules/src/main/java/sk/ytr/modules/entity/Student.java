@@ -25,7 +25,8 @@ public class Student extends BaseEntity {
 
     /** Khóa chính học sinh */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "student_seq")
+    @SequenceGenerator(name = "student_seq", sequenceName = "student_seq", allocationSize = 1)
     private Long id;
 
     /** Đợt khám mà học sinh tham gia */

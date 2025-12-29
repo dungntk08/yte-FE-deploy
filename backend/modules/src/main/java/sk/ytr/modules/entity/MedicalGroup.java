@@ -15,7 +15,8 @@ public class MedicalGroup {
 
     /** Khóa chính nhóm khám */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "medical_group_seq")
+    @SequenceGenerator(name = "medical_group_seq", sequenceName = "medical_group_seq", allocationSize = 1)
     private Long id;
 
     /** Mã nhóm khám */

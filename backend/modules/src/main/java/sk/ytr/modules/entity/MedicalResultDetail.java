@@ -21,7 +21,8 @@ public class MedicalResultDetail extends BaseEntity {
 
     /** Khóa chính kết quả */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "medical_result_detail_seq")
+    @SequenceGenerator(name = "medical_result_detail_seq", sequenceName = "medical_result_detail_seq", allocationSize = 1)
     private Long id;
 
     /** Học sinh được khám */

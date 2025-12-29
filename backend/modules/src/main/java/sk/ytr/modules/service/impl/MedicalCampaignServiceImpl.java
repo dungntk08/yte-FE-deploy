@@ -42,7 +42,7 @@ public class MedicalCampaignServiceImpl implements MedicalCampaignService {
 
         } catch (Exception e) {
             log.error("Lỗi tạo đợt khám", e);
-            throw new RuntimeException("Tạo đợt khám thất bại");
+            throw new RuntimeException("Tạo đợt khám thất bại " + e.getMessage());
         }
     }
 

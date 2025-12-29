@@ -16,7 +16,8 @@ public class MedicalIndicator {
 
     /** Khóa chính chỉ tiêu */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "medical_indicator_seq")
+    @SequenceGenerator(name = "medical_indicator_seq", sequenceName = "medical_indicator_seq", allocationSize = 1)
     private Long id;
 
     /** Nhóm chỉ tiêu */
