@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sk.ytr.modules.dto.request.MedicalIndicatorRequestDTO;
 import sk.ytr.modules.dto.response.MedicalIndicatorResponseDTO;
+import sk.ytr.modules.entity.CampaignMedicalConfig;
 import sk.ytr.modules.entity.MedicalGroup;
 import sk.ytr.modules.entity.MedicalIndicator;
 import sk.ytr.modules.repository.MedicalGroupRepository;
@@ -101,6 +102,11 @@ public class MedicalIndicatorServiceImpl implements MedicalIndicatorService {
     @Override
     public void deleteMedicalIndicator(Long id) {
         medicalIndicatorRepository.deleteById(id);
+    }
+
+    @Override
+    public List<MedicalIndicator> getMedicalIndicators(CampaignMedicalConfig campaignMedicalConfig) {
+        return medicalIndicatorRepository.findIndicatorsByCampaignMedicalConfigId(campaignMedicalConfig.getId());
     }
 }
 

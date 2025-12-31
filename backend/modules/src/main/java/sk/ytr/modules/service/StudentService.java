@@ -2,6 +2,7 @@ package sk.ytr.modules.service;
 
 import sk.ytr.modules.dto.request.StudentRequestDTO;
 import sk.ytr.modules.dto.response.StudentResponseDTO;
+import sk.ytr.modules.entity.Student;
 
 import java.util.List;
 
@@ -16,4 +17,6 @@ public interface StudentService {
     void deleteStudent(Long id);
 
     List<StudentResponseDTO> getStudentByCampaignId(Long campaignId);
+
+    void createMedicalResultForStudent(Student student);
 }

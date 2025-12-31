@@ -115,4 +115,11 @@ public class MedicalSubIndicatorServiceImpl implements MedicalSubIndicatorServic
                 .map(MedicalSubIndicatorResponseDTO::fromEntity)
                 .toList();
     }
+
+    public List<MedicalSubIndicator> getMedicalSubIndicators(List<MedicalIndicator> indicators) {
+        List<Long> indicatorIds = indicators.stream()
+                .map(MedicalIndicator::getId)
+                .toList();
+        return medicalSubIndicatorRepository.findByIndicatorIdIn(indicatorIds);
+    }
 }

@@ -5,6 +5,7 @@ import sk.ytr.modules.dto.response.CampaignMedicalConfigResponseDTO;
 import sk.ytr.modules.entity.CampaignMedicalConfig;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CampaignMedicalConfigRepository extends JpaRepository<CampaignMedicalConfig, Long> {
 }
