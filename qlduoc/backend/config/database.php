@@ -59,7 +59,7 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                \Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
         ],
 
@@ -81,16 +81,30 @@ return [
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', 'localhost'),
-            'port' => env('DB_PORT', '1433'),
-            'database' => env('DB_DATABASE', 'forge'),
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
+            'host' => env('DB_SQLSRV_HOST', 'localhost'),
+            'port' => env('DB_SQLSRV_PORT', '1433'),
+            'database' => env('DB_SQLSRV_DATABASE', 'forge'),
+            'username' => env('DB_SQLSRV_USERNAME', 'forge'),
+            'password' => env('DB_SQLSRV_PASSWORD', ''),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+            'encrypt' => 'no', // Set to 'yes' if Azure or required
+            'trust_server_certificate' => 'true', // Often needed for self-signed certs
+        ],
+        'sqlsrv_user' => [
+            'driver' => 'sqlsrv',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_SQLSRV_HOST', 'localhost'),
+            'port' => env('DB_SQLSRV_PORT', '1433'),
+            'database' => env('DB_SQLSRV_DATABASE_USER', 'forge'),
+            'username' => env('DB_SQLSRV_USERNAME', 'forge'),
+            'password' => env('DB_SQLSRV_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'encrypt' => 'no', // Set to 'yes' if Azure or required
+            'trust_server_certificate' => 'true', // Often needed for self-signed certs
         ],
 
     ],

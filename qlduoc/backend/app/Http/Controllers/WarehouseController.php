@@ -26,7 +26,11 @@ class WarehouseController extends Controller
         // But for the initial creation, the Admin needs to see the list.
         // If the admin creates a warehouse, they get assigned. So they see it.
         
-        $warehouses = $user->warehouses()->with('subAccount')->orderBy('created_at', 'desc')->get();
+        $warehouses = $user->warehouses()
+            ->with(['healthPost:Id,Name']) // Eager load HealthPost with only Id and Name
+            ->orderBy('CreatedAt', 'desc')
+            ->get();
+            
         return response()->json($warehouses);
     }
 
@@ -36,47 +40,89 @@ class WarehouseController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'code' => 'required|string|unique:warehouses,code',
+            'code' => 'required|string|unique:Warehouses,Code', // Case-sensitive table/column check usually irrelevant for MySQL on Mac but ensuring table name is PascalCase
             'name' => 'required|string',
             'type' => 'nullable|string',
             'department' => 'nullable|string',
             'is_pharmacy' => 'boolean',
             'active' => 'boolean',
-            'sub_account_id' => 'nullable|exists:sub_accounts,id',
+            'health_post_id' => 'nullable|exists:HealthPosts,Id',
         ]);
 
         $user = Auth::user();
 
-        // Verify sub_account belongs to user's account
-        if ($request->has('sub_account_id') && $request->sub_account_id) {
-            $subAccount = \App\Models\SubAccount::where('id', $request->sub_account_id)
-                            ->where('account_id', $user->account_id)
-                            ->first();
-            if (!$subAccount) {
-                 return response()->json(['message' => 'Invalid Sub Account'], 422);
+        // Note: New schema uses PascalCase for attributes. 
+        // We'll map request snake_case to PascalCase for now, or assume request matches.
+        // Assuming request sends snake_case from frontend.
+        
+        // We need to determine HealthPostId. 
+        // If current user is Manager of a HP, we can assign that. 
+        // Or passed in request? 
+        // For now, let's just create it. But wait, HealthPostId is REQUIRED in DB.
+        // We need to get it from User Scope.
+        // Check for User Scope
+        $scope = $user->scopes()->first();
+        if (!$scope) {
+             return response()->json(['message' => 'User does not belong to any scope'], 400);
+        }
+
+        $targetHealthPostId = null;
+        $targetMedicalCenterId = null;
+
+        if ($request->has('health_post_id')) {
+            $requestPostId = $request->health_post_id;
+            
+            // Validate user access to this requestPostId
+            // 1. If User has specific HealthPostId in scope, must match.
+            if ($scope->HealthPostId && $scope->HealthPostId != $requestPostId) {
+                return response()->json(['message' => 'User cannot create warehouse for this Health Post'], 403);
+            }
+
+            // 2. If User is Master (MedicalCenterId set, HealthPostId might be null or different?)
+            // If scope has MedicalCenterId, verify the requested post belongs to it.
+            if ($scope->MedicalCenterId) {
+                $checkPost = \App\Models\HealthPost::where('Id', $requestPostId)
+                    ->where('MedicalCenterId', $scope->MedicalCenterId)
+                    ->exists();
+                if (!$checkPost) {
+                    return response()->json(['message' => 'Health Post does not belong to your Medical Center'], 403);
+                }
+                $targetMedicalCenterId = $scope->MedicalCenterId;
+            }
+            
+            $targetHealthPostId = $requestPostId;
+        } else {
+            // No input, try to infer default
+            if ($scope->HealthPostId) {
+                $targetHealthPostId = $scope->HealthPostId;
+            } else {
+                return response()->json(['message' => 'health_post_id is required for your account type'], 400);
             }
         }
 
-        $warehouse = Warehouse::create([
-            'account_id' => $user->account_id,
-            'code' => $request->code,
-            'name' => $request->name,
-            'type' => $request->type,
-            'department' => $request->department,
-            'is_pharmacy' => $request->is_pharmacy ?? true,
-            'active' => $request->active ?? true,
-            'sub_account_id' => $request->sub_account_id,
-        ]);
+        // Final check
+        if (!$targetHealthPostId) {
+             return response()->json(['message' => 'Unable to determine Health Post'], 400);
+        }
 
-        // Auto-assign creator to the warehouse
-        $warehouse->users()->attach($user->id);
+        // Fetch HealthPost to get/confirm MedicalCenterId if not set
+        if (!$targetMedicalCenterId) {
+            $healthPost = \App\Models\HealthPost::find($targetHealthPostId);
+            $targetMedicalCenterId = $healthPost ? $healthPost->MedicalCenterId : null;
+        }
+
+        $warehouse = Warehouse::create([
+            'HealthPostId' => $targetHealthPostId,
+            'MedicalCenterId' => $targetMedicalCenterId,
+            'Code' => $request->code, 
+            'Name' => $request->name,
+            'Type' => $request->type ?? 'Main',
+            'IsActive' => $request->active ?? true,
+        ]);
 
         return response()->json($warehouse, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
         $warehouse = Auth::user()->warehouses()->findOrFail($id);
@@ -91,22 +137,50 @@ class WarehouseController extends Controller
         $warehouse = Auth::user()->warehouses()->findOrFail($id);
 
         $request->validate([
-            'code' => 'sometimes|string|unique:warehouses,code,' . $id,
+            'code' => 'sometimes|string|unique:Warehouses,Code,' . $id,
             'name' => 'sometimes|string',
-            'sub_account_id' => 'nullable|exists:sub_accounts,id',
+            'type' => 'nullable|string',
+            'is_pharmacy' => 'boolean',
+            'active' => 'boolean',
+            'health_post_id' => 'nullable|exists:HealthPosts,Id',
         ]);
         
-        // Verify sub_account belongs to user's account if changing
-        if ($request->has('sub_account_id') && $request->sub_account_id) {
-            $subAccount = \App\Models\SubAccount::where('id', $request->sub_account_id)
-                            ->where('account_id', Auth::user()->account_id)
-                            ->first();
-            if (!$subAccount) {
-                 return response()->json(['message' => 'Invalid Sub Account'], 422);
+        $data = [];
+        if ($request->has('code')) $data['Code'] = $request->code;
+        if ($request->has('name')) $data['Name'] = $request->name;
+        if ($request->has('type')) $data['Type'] = $request->type;
+        // if ($request->has('is_pharmacy')) $data['IsPharmacy'] = $request->is_pharmacy; // Column not in DB
+        if ($request->has('active')) $data['IsActive'] = $request->active;
+        
+        // Handle HealthPost change if permitted? For now allowing it if they have access.
+        // But changing HealthPost might affect permissions. 
+        // If they are Master, they can move it. If Point user, they can't change it outside their scope.
+        // Re-using logic from store mostly.
+        if ($request->has('health_post_id')) {
+             $user = Auth::user();
+             $scope = $user->scopes()->first();
+             $requestPostId = $request->health_post_id;
+
+             // Validate access to new Post
+            if ($scope->HealthPostId && $scope->HealthPostId != $requestPostId) {
+                return response()->json(['message' => 'User cannot move warehouse to this Health Post'], 403);
             }
+            if ($scope->MedicalCenterId) {
+                $checkPost = \App\Models\HealthPost::where('Id', $requestPostId)
+                    ->where('MedicalCenterId', $scope->MedicalCenterId)
+                    ->exists();
+                if (!$checkPost) {
+                    return response()->json(['message' => 'Health Post does not belong to your Medical Center'], 403);
+                }
+            }
+            
+            $data['HealthPostId'] = $requestPostId;
+            // Also update MedicalCenterId if HealthPost changes
+            $healthPost = \App\Models\HealthPost::find($requestPostId);
+            $data['MedicalCenterId'] = $healthPost ? $healthPost->MedicalCenterId : null;
         }
 
-        $warehouse->update($request->all());
+        $warehouse->update($data);
 
         return response()->json($warehouse);
     }
@@ -122,40 +196,33 @@ class WarehouseController extends Controller
     }
 
     // Permission Management
+    // With the new scope-based permission system:
+    // - Users belong to Health Posts via UserScopes.
+    // - Warehouses belong to Health Posts.
+    // - Users have access to all warehouses in their Health Post (for Managers/Staff as defined).
+    // Therefore, direct assignment of users to warehouses (WarehouseUsers pivot) is no longer primary.
+    // We strictly use Scopes.
+
     public function getUsers(string $id)
     {
+        // Get users who have scope for the Health Post of this Warehouse
         $warehouse = Auth::user()->warehouses()->findOrFail($id);
-        return response()->json($warehouse->users);
+        
+        // Find users with Scope.HealthPostId == $warehouse->HealthPostId
+        $users = \App\Models\AppUser::whereHas('scopes', function($q) use ($warehouse) {
+            $q->where('HealthPostId', $warehouse->HealthPostId);
+        })->get();
+
+        return response()->json($users);
     }
 
     public function assignUser(Request $request, string $id)
     {
-        $warehouse = Auth::user()->warehouses()->findOrFail($id);
-        
-        $request->validate([
-            'user_id' => 'required|exists:users,id'
-        ]);
-
-        // Check if user belongs to same account (security check)
-        $userToAdd = \App\Models\User::where('id', $request->user_id)
-                        ->where('account_id', Auth::user()->account_id)
-                        ->firstOrFail();
-
-        // Attach without duplicating
-        $warehouse->users()->syncWithoutDetaching([$userToAdd->id]);
-
-        return response()->json(['message' => 'User assigned successfully']);
+        return response()->json(['message' => 'User assignment is now managed via Health Post Scopes.'], 400);
     }
 
     public function removeUser(string $id, string $userId)
     {
-        $warehouse = Auth::user()->warehouses()->findOrFail($id);
-        
-        // Prevent removing yourself if you are the only one? Or just allow it.
-        // Allow for now.
-        
-        $warehouse->users()->detach($userId);
-        
-        return response()->json(['message' => 'User removed successfully']);
+        return response()->json(['message' => 'User assignment is now managed via Health Post Scopes.'], 400);
     }
 }

@@ -14,12 +14,16 @@ export const importOpeningStock = async (warehouseId: string, file: File) => {
 };
 
 // Manual Import from Supplier
-export const createImportNote = async (data: any) => {
-    const response = await api.post('/inventory/import-supplier', data);
+export const createStockVoucher = async (data: any) => {
+    const response = await api.post('/stock-vouchers', data);
     return response.data;
 };
 
+// Deprecated or alias
+export const createImportNote = createStockVoucher;
+
 export const createOpeningStockManual = async (data: any) => {
+    // Post to the dedicated opening stock endpoint which now expects PascalCase
     const response = await api.post('/inventory/opening-stock/manual', data);
     return response.data;
 };
@@ -40,8 +44,13 @@ export const downloadSample = async () => {
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'mau_nhap_ton_dau.xlsx');
+    link.setAttribute('download', 'mau_nhap_ton_dau.csv');
     document.body.appendChild(link);
     link.click();
     link.remove();
+};
+
+export const getAllProductsForOpeningStock = async () => {
+    const response = await api.get('/inventory/opening-stock/products-all');
+    return response.data;
 };

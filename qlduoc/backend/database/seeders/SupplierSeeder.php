@@ -24,36 +24,45 @@ class SupplierSeeder extends Seeder
         $file = fopen($csvFile, 'r');
         $header = fgetcsv($file); // Skip header
 
+        // CSV Structure seems to be:
         // "NguonNhapID","Ten","DiaChi","TinhThanh","QuocGia","DienThoai","Fax","GhiChu","Email","WebSite","Loai","HienThi"
-        // 0: NguonNhapID, 1: Ten, 2: DiaChi, 3: TinhThanh, 4: QuocGia, 5: DienThoai, 8: Email
-
+        
         $batch = [];
         $now = now();
         
-        // Use a transaction or chunk insert for speed
         DB::beginTransaction();
         try {
             while (($row = fgetcsv($file)) !== false) {
+                // skip if name or code is missing
+                if (empty($row[0]) || empty($row[1])) {
+                    continue;
+                }
+
+                $code = trim($row[0]);
+                $name = trim($row[1]);
+
                 // Determine Address
                 $addressParts = [];
-                if (!empty($row[2])) $addressParts[] = $row[2];
-                if (!empty($row[3])) $addressParts[] = $row[3];
-                if (!empty($row[4])) $addressParts[] = $row[4];
+                if (!empty($row[2])) $addressParts[] = trim($row[2]);
+                if (!empty($row[3])) $addressParts[] = trim($row[3]);
+                if (!empty($row[4])) $addressParts[] = trim($row[4]);
                 $fullAddress = implode(', ', $addressParts);
 
-                // Prepare data
-                // Limit phone length to fit DB if needed, but text is fine. Phone column is usually string.
-                
+                // Check invalid phone/email length
+                $phone = substr($row[5] ?? '', 0, 50);
+                $email = substr($row[8] ?? '', 0, 100);
+
+                // Update or Create
+                // Key is Code.
                 Supplier::updateOrCreate(
-                    ['code' => $row[0], 'account_id' => null], // Key to check existing system supplier
+                    ['Code' => $code],
                     [
-                        'id' => Uuid::uuid4()->toString(),
-                        'name' => $row[1] ?? 'Unknown',
-                        'address' => substr($fullAddress, 0, 500),
-                        'phone' => substr($row[5] ?? '', 0, 20),
-                        'email' => substr($row[8] ?? '', 0, 255),
-                        'created_at' => $now,
-                        'updated_at' => $now,
+                        'Name' => $name,
+                        'Address' => substr($fullAddress, 0, 500),
+                        'Phone' => $phone,
+                        'Email' => $email,
+                        'IsActive' => true,
+                        'HealthPostId' => null // Global Supplier
                     ]
                 );
             }

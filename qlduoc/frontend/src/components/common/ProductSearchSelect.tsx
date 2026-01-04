@@ -36,9 +36,15 @@ const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({ value, initia
                 setIsOpen(false);
             }
         };
-        
-        const handleScroll = () => {
-             if (isOpen) setIsOpen(false); // Close on scroll to avoid detached popup
+
+        const handleScroll = (event: Event) => {
+            if (isOpen) {
+                const dropdown = document.getElementById('product-search-dropdown');
+                if (dropdown && dropdown.contains(event.target as Node)) {
+                    return;
+                }
+                setIsOpen(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -86,12 +92,12 @@ const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({ value, initia
 
     const handleSelect = (product: Product) => {
         onSelect(product);
-        setKeyword(`${product.name} (${product.code})`);
+        setKeyword(`${product.Name} (${product.Code})`);
         setIsOpen(false);
     };
 
     const dropdownContent = (
-        <div 
+        <div
             id="product-search-dropdown"
             className="fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-xl max-h-60 overflow-y-auto"
             style={{
@@ -100,15 +106,15 @@ const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({ value, initia
                 bottom: window.innerHeight - coords.top + 4 // Position ABOVE the input
             }}
         >
-             {results.length > 0 ? (
+            {results.length > 0 ? (
                 results.map((product) => (
                     <div
-                        key={product.id}
+                        key={product.Id}
                         className="px-3 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 text-sm"
                         onClick={() => handleSelect(product)}
                     >
-                        <div className="font-medium text-gray-800">{product.name}</div>
-                        <div className="text-gray-500 text-xs">Mã: {product.code} | ĐVT: {product.unit}</div>
+                        <div className="font-medium text-gray-800">{product.Name}</div>
+                        <div className="text-gray-500 text-xs">Mã: {product.Code} | ĐVT: {product.unit?.Name}</div>
                     </div>
                 ))
             ) : (
@@ -140,7 +146,7 @@ const ProductSearchSelect: React.FC<ProductSearchSelectProps> = ({ value, initia
                 {loading && <Loader size={16} className="absolute right-2 top-1/2 transform -translate-y-1/2 animate-spin text-blue-500" />}
             </div>
 
-            {isOpen && (results.length > 0 || loading || (keyword && results.length === 0)) && 
+            {isOpen && (results.length > 0 || loading || (keyword && results.length === 0)) &&
                 createPortal(dropdownContent, document.body)
             }
         </div>

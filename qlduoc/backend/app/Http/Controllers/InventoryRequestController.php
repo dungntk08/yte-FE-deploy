@@ -33,7 +33,7 @@ class InventoryRequestController extends Controller
             $query->whereIn('supply_warehouse_id', $userWarehouseIds);
         }
 
-        $requests = $query->orderBy('created_at', 'desc')->paginate(20);
+        $requests = $query->orderBy('CreatedAt', 'desc')->paginate(20);
 
         return response()->json($requests);
     }

@@ -2,39 +2,49 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasMedicalCenterScope;
 
-class Supplier extends Model
+class Supplier extends BaseModel
 {
-    use HasFactory, HasUuids;
+    use HasMedicalCenterScope;
+    
+    protected $table = 'Suppliers';
+    protected $primaryKey = 'Id';
 
     protected $fillable = [
-        'account_id',
-        'code',
-        'name',
-        'phone',
-        'email',
-        'address',
-        'tax_code',
+        'Code',
+        'Name',
+        'Address',
+        'Phone',
+        'Email',
+        'TaxCode',
+        'IsActive',
+        'MedicalCenterId'
     ];
 
-    public function account()
-    {
-        return $this->belongsTo(Account::class);
-    }
 
-    public function scopeAccessible($query, $accountId)
+
+    /**
+     * Scope to get suppliers for a specific user, including shared ones (MedicalCenterId is NULL).
+     */
+    public function scopeForUser($query, $user)
     {
-        return $query->where(function($q) use ($accountId) {
-             $q->whereNull('account_id')
-               ->orWhere('account_id', $accountId);
+        // Bypass the global MedicalCenterScope to handle logic manually
+        $query->withoutGlobalScope(\App\Scopes\MedicalCenterScope::class);
+
+        if (!$user) {
+            return $query;
+        }
+
+        // Get user's medical center IDs
+        $medicalCenterIds = $user->scopes()->pluck('MedicalCenterId')->filter()->unique();
+
+        return $query->where(function ($q) use ($medicalCenterIds) {
+            $q->whereNull('MedicalCenterId'); // Shared suppliers
+            
+            if ($medicalCenterIds->isNotEmpty()) {
+                $q->orWhereIn('MedicalCenterId', $medicalCenterIds);
+            }
         });
-    }
-
-    public function inventoryNotes()
-    {
-        return $this->hasMany(InventoryNote::class);
     }
 }

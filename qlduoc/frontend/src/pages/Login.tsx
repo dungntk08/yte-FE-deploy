@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,16 +15,16 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/login', { email, password });
-      
+      const response = await api.post('/login', { username, password });
+
       console.log('Login success:', response.data);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      
-      alert('Đăng nhập thành công!');
+
+      // alert('Đăng nhập thành công!'); // Removed alert for smoother UX
       navigate('/');
-      
-    } catch (err) {
+
+    } catch (err: any) {
       console.error('Login failed:', err);
       setError(err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
     } finally {
@@ -37,9 +37,9 @@ const Login = () => {
       {/* Left side - Image */}
       <div className="hidden lg:flex w-1/2 items-center justify-center bg-blue-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800 opacity-90 z-10"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" 
-          alt="Pharmacy Management" 
+        <img
+          src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
+          alt="Pharmacy Management"
           className="absolute inset-0 h-full w-full object-cover mix-blend-overlay"
         />
         <div className="z-20 p-12 text-white">
@@ -64,28 +64,28 @@ const Login = () => {
               Chào mừng trở lại! Vui lòng nhập thông tin của bạn.
             </p>
           </div>
-          
+
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 text-red-500 text-sm p-3 rounded-md border border-red-200">
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-4 rounded-md shadow-sm">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Tên đăng nhập
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="username"
+                  name="username"
+                  type="text"
                   required
                   className="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 py-2 px-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border"
-                  placeholder="Nhập email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Nhập tên đăng nhập"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
               <div>
@@ -135,7 +135,7 @@ const Login = () => {
               </button>
             </div>
           </form>
-          
+
           <div className="mt-6 text-center text-xs text-gray-500">
             &copy; 2025 QLDuoc System. All rights reserved.
           </div>
@@ -146,3 +146,4 @@ const Login = () => {
 };
 
 export default Login;
+

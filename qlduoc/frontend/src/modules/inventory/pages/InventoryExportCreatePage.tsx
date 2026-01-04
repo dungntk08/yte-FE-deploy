@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import api from '../../../api/axios';
-import { Save, ArrowLeft, Calendar } from 'lucide-react';
+import { Save, ArrowLeft } from 'lucide-react';
 
 const InventoryExportCreatePage: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -12,9 +12,9 @@ const InventoryExportCreatePage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [previewData, setPreviewData] = useState<any>(null);
     const [items, setItems] = useState<any[]>([]);
-    
+
     // Header Info
-    const [code, setCode] = useState('PX' + new Date().toISOString().slice(0,10).replace(/-/g,'') + Math.floor(Math.random()*1000));
+    const [code, setCode] = useState('PX' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + Math.floor(Math.random() * 1000));
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [description, setDescription] = useState('Xuất kho nội bộ');
     const [warehouseName, setWarehouseName] = useState(''); // Source
@@ -31,7 +31,7 @@ const InventoryExportCreatePage: React.FC = () => {
             const response = await api.get('/inventory/export/preview', { params: { request_id: id } });
             setPreviewData(response.data);
             setItems(response.data.items || []);
-            
+
             if (response.data.request) {
                 setWarehouseName(response.data.request.supply_warehouse?.name || 'Kho xuất');
                 setDestWarehouseName(response.data.request.request_warehouse?.name || 'Kho nhập');
@@ -80,7 +80,7 @@ const InventoryExportCreatePage: React.FC = () => {
 
     return (
         <DashboardLayout>
-            <div className="max-w-7xl mx-auto">
+            <div className="w-full">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
@@ -90,64 +90,61 @@ const InventoryExportCreatePage: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-                    <h2 className="text-blue-600 font-semibold mb-4 text-sm uppercase tracking-wide">Thông tin chung</h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 mb-4">
+                    <h2 className="text-blue-600 font-semibold mb-3 text-sm uppercase tracking-wide">Thông tin chung</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Mã chứng từ</label>
-                            <input 
-                                type="text" 
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Mã chứng từ</label>
+                            <input
+                                type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                                className="w-full px-2 py-1.5 border rounded-lg focus:ring-1 focus:ring-blue-500 bg-gray-50 text-sm"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Loại phiếu</label>
-                            <input 
-                                type="text" 
-                                value="Xuất nội bộ" 
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Loại phiếu</label>
+                            <input
+                                type="text"
+                                value="Xuất nội bộ"
                                 disabled
-                                className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500"
+                                className="w-full px-2 py-1.5 border rounded-lg bg-gray-100 text-gray-500 text-sm"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Kho giao (Nguồn)</label>
-                            <input 
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Kho giao (Nguồn)</label>
+                            <input
                                 type="text"
                                 value={warehouseName}
                                 disabled
-                                className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500"
+                                className="w-full px-2 py-1.5 border rounded-lg bg-gray-100 text-gray-500 text-sm"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Phương pháp xuất</label>
-                            <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Phương pháp xuất</label>
+                            <select className="w-full px-2 py-1.5 border rounded-lg focus:ring-1 focus:ring-blue-500 text-sm">
                                 <option>Xuất theo lô nhập (FIFO)</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Kho nhận (Đích)</label>
-                            <input 
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Kho nhận (Đích)</label>
+                            <input
                                 type="text"
                                 value={destWarehouseName}
                                 disabled
-                                className="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-500"
+                                className="w-full px-2 py-1.5 border rounded-lg bg-gray-100 text-gray-500 text-sm"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Ngày chứng từ</label>
-                             <div className="relative">
-                                <Calendar className="absolute left-3 top-2.5 text-gray-400" size={18} />
-                                <input 
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Ngày chứng từ</label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="w-full px-2 py-1.5 border rounded-lg focus:ring-1 focus:ring-blue-500 text-sm"
+                            />
                         </div>
                     </div>
                 </div>
@@ -175,8 +172,8 @@ const InventoryExportCreatePage: React.FC = () => {
                                     <td className="p-4 font-medium">{item.product_name}</td>
                                     <td className="p-4 text-gray-500">{item.unit}</td>
                                     <td className="p-4">
-                                        <input 
-                                            type="number" 
+                                        <input
+                                            type="number"
                                             className="w-full border rounded px-2 py-1 text-center font-bold text-blue-600"
                                             value={item.quantity}
                                             onChange={(e) => handleQuantityChange(idx, Number(e.target.value))}
@@ -202,8 +199,8 @@ const InventoryExportCreatePage: React.FC = () => {
                     <button onClick={() => navigate(-1)} className="px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50">
                         Hủy (Esc)
                     </button>
-                    <button 
-                        onClick={handleSubmit} 
+                    <button
+                        onClick={handleSubmit}
                         className="flex items-center gap-2 px-6 py-2 bg-blue-900 text-white font-medium rounded-lg hover:bg-blue-800 shadow-sm"
                     >
                         <Save size={20} /> Lưu (F10)

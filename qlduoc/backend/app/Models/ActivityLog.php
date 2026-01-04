@@ -2,32 +2,29 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-
-class ActivityLog extends Model
+class ActivityLog extends BaseModel
 {
-    use HasFactory, HasUuids;
+    protected $table = 'ActivityLogs';
+    protected $primaryKey = 'Id';
+    public $timestamps = false; // We use CreatedAt only
 
     protected $fillable = [
-        'user_id',
-        'action',
-        'description',
-        'model',
-        'model_id',
-        'payload',
-        'ip_address',
-        'user_agent',
+        'SubjectType',
+        'SubjectId',
+        'Action',
+        'Description',
+        'CauserId',
+        'Properties',
+        'CreatedAt'
     ];
 
     protected $casts = [
-        'payload' => 'array',
+        'Properties' => 'array',
+        'CreatedAt' => 'datetime'
     ];
 
-    public function user()
+    public function causer()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(AppUser::class, 'CauserId', 'Id');
     }
 }
