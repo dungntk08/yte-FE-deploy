@@ -1,10 +1,10 @@
 package sk.ytr.modules.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import sk.ytr.modules.dto.response.MedicalResultDetailResponseDTO;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import sk.ytr.modules.entity.MedicalResultDetail;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,5 +20,11 @@ public interface MedicalResultDetailRepository extends JpaRepository<MedicalResu
 
     List<MedicalResultDetail> findByStudentIdAndCampaignId(Long id, Long campaignId);
 
-    List<MedicalResultDetail> findByCampaignId(Long campaignId);
+    @Query("""
+       SELECT m
+       FROM MedicalResultDetail m
+       WHERE m.campaign.id = :campaignId
+       """)
+    List<MedicalResultDetail> findByCampaignId(@Param("campaignId") Long campaignId);
+
 }

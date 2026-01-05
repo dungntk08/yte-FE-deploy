@@ -6,6 +6,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -95,4 +96,28 @@ public class MedicalResultExcelController {
                     .body("Import thất bại: " + e.getMessage());
         }
     }
+
+    @GetMapping("/export-template/{campaignId}")
+    public ResponseEntity<Resource> exportTemplateExcel(
+            @PathVariable Long campaignId
+    ) {
+
+        ByteArrayInputStream stream =
+                excelService.exportTemplateExcel(campaignId);
+
+        InputStreamResource resource = new InputStreamResource(stream);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=excel_mau_ket_qua_kham.xlsx"
+                )
+                .contentType(
+                        MediaType.parseMediaType(
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                )
+                .body(resource);
+    }
+
 }

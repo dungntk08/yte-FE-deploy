@@ -29,4 +29,6 @@ public interface ExcelService {
             Sheet sheet,
             Long campaignId
     );
+
+    ByteArrayInputStream exportTemplateExcel(Long campaignId);
 }

@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sk.ytr.modules.constant.GenderTypeEnum;
@@ -17,10 +19,7 @@ import sk.ytr.modules.service.ExcelService;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,7 +35,10 @@ public class ExcelServiceImpl implements ExcelService {
     private final MedicalIndicatorRepository medicalIndicatorRepository;
     private final MedicalSubIndicatorRepository medicalSubIndicatorRepository;
     private final MedicalGroupRepository medicalGroupRepository;
-
+    @Lazy
+    private final MedicalIndicatorServiceImpl medicalIndicatorService;
+    @Lazy
+    private final MedicalSubIndicatorServiceImpl medicalSubIndicatorService;
     /**
      * Tạo header Excel 3 dòng:
      * - Dòng 0: Nhóm khám
@@ -544,7 +546,7 @@ public class ExcelServiceImpl implements ExcelService {
 
         List<CampaignMedicalConfigSub> configSubs =
                 campaignMedicalConfigSubRepository
-                        .findByCampaignIdOrderByDisplayOrderAsc(campaignId);
+                        .findByCampaignMedicalConfigIdOrderByDisplayOrderAsc(campaignId);
 
         List<ExcelMedicalColumn> columns = new ArrayList<>();
 
@@ -719,4 +721,378 @@ public class ExcelServiceImpl implements ExcelService {
             return null;
         }
     }
+
+    /**
+     * Export file Excel mẫu kết quả khám
+     *
+     * @param campaignId id chiến dịch
+     * @return ByteArrayInputStream của file Excel
+     */
+    @Override
+    public ByteArrayInputStream exportTemplateExcel(Long campaignId) {
+
+        try (Workbook workbook = new XSSFWorkbook()) {
+
+            Sheet sheet = workbook.createSheet("Mẫu kết quả khám");
+
+            CellStyle titleStyle = createBorderStyle(workbook, true);
+            CellStyle headerStyle = createBorderStyle(workbook, true);
+
+            // ========= 1. LẤY STUDENT MẪU =========
+            MedicalCampaign campaign =
+                    medicalCampaignRepository.findById(campaignId)
+                            .orElseThrow(() -> new RuntimeException("Campaign không tồn tại"));
+
+            String className = campaign.getSchool() != null ? campaign.getCampaignName() : "……";
+            String schoolName = campaign.getSchool() != null ? campaign.getSchool().getSchoolName() : "……………………";
+
+            // ========= 2. DÒNG TIÊU ĐỀ =========
+            Row titleRow = sheet.createRow(0);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue(
+                    "DANH SÁCH HỌC SINH KHÁM, KIỂM TRA SỨC KHỎE ĐỊNH KỲ NĂM HỌC 2025 - 2026"
+            );
+            titleCell.setCellStyle(titleStyle);
+
+            // ========= 3. DÒNG LỚP / TRƯỜNG =========
+            Row infoRow = sheet.createRow(1);
+            Cell infoCell = infoRow.createCell(0);
+            infoCell.setCellValue(
+                    "Lớp: " + className + " ; Trường: " + schoolName
+            );
+            infoCell.setCellStyle(titleStyle);
+
+            // ========= 4. BUILD CỘT ĐỘNG =========
+            List<ExcelMedicalColumn> dynamicColumns =
+                    buildDynamicColumnsTemplate(campaignId);
+
+            // Tổng số cột
+            int totalCol = 10 + dynamicColumns.size() - 1;
+
+            // Merge 2 dòng đầu
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, totalCol));
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, totalCol));
+
+            // ========= 5. BUILD HEADER (3 dòng) =========
+            buildHeaderAtRow(
+                    workbook,
+                    sheet,
+                    dynamicColumns,
+                    2 // bắt đầu header từ row 2
+            );
+
+            // ========= 6. FREEZE =========
+            sheet.createFreezePane(0, 5);
+
+            // ========= 7. AUTO SIZE =========
+            for (int i = 0; i <= totalCol; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi export Excel mẫu", e);
+        }
+    }
+
+    /**
+     * Xây dựng danh sách các cột động (dynamic columns) cho mẫu Excel dựa trên cấu hình của chiến dịch y tế.
+     *
+     * <p>Quy trình:
+     * - Lấy cấu hình chiến dịch y tế từ `CampaignMedicalConfig`.
+     * - Duyệt qua các nhóm chỉ tiêu (MedicalGroup) và chỉ tiêu (MedicalIndicator) để tạo các cột tương ứng.
+     * - Nếu chỉ tiêu có chỉ số phụ (sub-indicator), tạo thêm các cột cho từng chỉ số phụ.
+     *
+     * <p>Đầu ra:
+     * - Trả về danh sách các cột động, mỗi cột chứa thông tin về nhóm, chỉ tiêu, và chỉ số phụ (nếu có).
+     *
+     * @param campaignId ID của chiến dịch y tế
+     * @return Danh sách các cột động (ExcelMedicalColumn)
+     * @throws RuntimeException nếu không tìm thấy chiến dịch y tế
+     */
+    private List<ExcelMedicalColumn> buildDynamicColumnsTemplate(Long campaignId) {
+
+        List<ExcelMedicalColumn> columns = new ArrayList<>();
+        CampaignMedicalConfig campaignMedicalConfig =
+                medicalCampaignRepository.findById(campaignId)
+                        .orElseThrow(() -> new RuntimeException("Campaign không tồn tại"))
+                        .getCampaignMedicalConfig();
+
+        // Ví dụ: lấy từ cấu hình campaign_medical_config
+        List<CampaignMedicalConfigSub> configs =
+                campaignMedicalConfigSubRepository
+                        .findByCampaignMedicalConfig_IdOrderByDisplayOrderAsc(campaignMedicalConfig.getId());
+        List<MedicalIndicator> indicators = medicalIndicatorService.getMedicalIndicators(campaignMedicalConfig);
+        List<MedicalSubIndicator> subIndicators = medicalSubIndicatorService.getMedicalSubIndicators(indicators);
+        int colIndex = 10; // sau 10 cột cố định
+
+        for (CampaignMedicalConfigSub cfg : configs) {
+
+            for(MedicalIndicator indicator : indicators) {
+                if(!indicator.getGroup().getId().equals(cfg.getMedicalGroup().getId())) {
+                    continue;
+                }
+                if (Boolean.TRUE.equals(indicator.getHasSubIndicator())) {
+                    List<MedicalSubIndicator> subs = subIndicators.stream()
+                            .filter(sub -> sub.getIndicator().getId().equals(indicator.getId()))
+                            .collect(Collectors.toList());
+                    for (MedicalSubIndicator sub : subs) {
+                        ExcelMedicalColumn col = new ExcelMedicalColumn();
+                        col.setColumnIndex(colIndex++);
+                        col.setMedicalGroupId(cfg.getMedicalGroup().getId());
+                        col.setMedicalGroupName(cfg.getMedicalGroup().getGroupName());
+                        col.setIndicatorId(indicator.getId());
+                        col.setIndicatorName(indicator.getIndicatorName());
+                        col.setSubIndicatorId(sub.getId());
+                        col.setSubIndicatorName(sub.getSubName());
+                        columns.add(col);
+                    }
+                } else {
+                    ExcelMedicalColumn col = new ExcelMedicalColumn();
+                    col.setColumnIndex(colIndex++);
+                    col.setMedicalGroupId(cfg.getMedicalGroup().getId());
+                    col.setMedicalGroupName(cfg.getMedicalGroup().getGroupName());
+                    col.setIndicatorId(indicator.getId());
+                    col.setIndicatorName(indicator.getIndicatorName());
+                    columns.add(col);
+                }
+            }
+        }
+
+        return columns;
+    }
+
+
+    private CellStyle createBorderStyle(Workbook workbook, boolean bold) {
+
+        CellStyle style = workbook.createCellStyle();
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setWrapText(true);
+
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        Font font = workbook.createFont();
+        font.setBold(bold);
+        font.setFontHeightInPoints((short) 11);
+        style.setFont(font);
+
+        return style;
+    }
+
+    public int buildHeaderAtRow(
+            Workbook workbook,
+            Sheet sheet,
+            List<ExcelMedicalColumn> dynamicColumns,
+            int startRow
+    ) {
+
+        CellStyle headerStyle = createBorderStyle(workbook, true);
+
+        Row groupRow = sheet.createRow(startRow);
+        Row indicatorRow = sheet.createRow(startRow + 1);
+        Row subRow = sheet.createRow(startRow + 2);
+
+        // ================= FIXED COLUMNS =================
+        String[] fixedHeaders = {
+                "STT",
+                "Họ và tên học sinh",
+                "Ngày sinh",
+                "Nam",
+                "Nữ",
+                "Địa chỉ",
+                "CCCD",
+                "Cân nặng",
+                "Chiều cao",
+                "TB GĐ"
+        };
+
+        int colIndex = 0;
+
+        for (String header : fixedHeaders) {
+
+            // tạo cell đủ 3 row
+            createCell(groupRow, colIndex, header, headerStyle);
+            createCell(indicatorRow, colIndex, "", headerStyle);
+            createCell(subRow, colIndex, "", headerStyle);
+
+            CellRangeAddress region =
+                    new CellRangeAddress(startRow, startRow + 2, colIndex, colIndex);
+            sheet.addMergedRegion(region);
+            setBorderForMergedRegion(sheet, region);
+
+            colIndex++;
+        }
+
+        int dynamicStartCol = colIndex;
+
+        // ================= DYNAMIC COLUMNS =================
+        for (ExcelMedicalColumn col : dynamicColumns) {
+
+            int c = col.getColumnIndex();
+
+            createCell(groupRow, c, col.getMedicalGroupName(), headerStyle);
+            createCell(indicatorRow, c, col.getIndicatorName(), headerStyle);
+            createCell(
+                    subRow,
+                    c,
+                    col.getSubIndicatorName() != null ? col.getSubIndicatorName() : "",
+                    headerStyle
+            );
+        }
+
+        int dynamicEndCol = dynamicColumns.stream()
+                .mapToInt(ExcelMedicalColumn::getColumnIndex)
+                .max()
+                .orElse(dynamicStartCol);
+
+        // ================= MERGE GROUP =================
+        mergeAndBorderSameCell(sheet, groupRow, startRow, dynamicStartCol, dynamicEndCol);
+
+        // ================= MERGE INDICATOR =================
+        mergeAndBorderSameCell(sheet, indicatorRow, startRow + 1, dynamicStartCol, dynamicEndCol);
+
+        // ================= MERGE INDICATOR WITHOUT SUB =================
+        for (ExcelMedicalColumn col : dynamicColumns) {
+            if (col.getSubIndicatorName() == null) {
+                CellRangeAddress region =
+                        new CellRangeAddress(
+                                startRow + 1,
+                                startRow + 2,
+                                col.getColumnIndex(),
+                                col.getColumnIndex()
+                        );
+                sheet.addMergedRegion(region);
+                setBorderForMergedRegion(sheet, region);
+            }
+        }
+
+        // ================= FULL COLUMN BORDER (QUAN TRỌNG NHẤT) =================
+        applyBorderForColumns(
+                sheet,
+                workbook,
+                0,
+                dynamicEndCol,
+                startRow,
+                startRow + 2 + 200 // kéo xuống 200 dòng cho nhập liệu
+        );
+
+        return dynamicEndCol;
+    }
+
+    private void mergeAndBorderSameCell(
+            Sheet sheet,
+            Row row,
+            int rowIndex,
+            int startCol,
+            int endCol
+    ) {
+        int col = startCol;
+
+        while (col <= endCol) {
+
+            String val = getCellValue(row.getCell(col));
+            int from = col;
+
+            while (col + 1 <= endCol &&
+                    Objects.equals(val, getCellValue(row.getCell(col + 1)))) {
+                col++;
+            }
+
+            if (from < col) {
+                CellRangeAddress region =
+                        new CellRangeAddress(rowIndex, rowIndex, from, col);
+                sheet.addMergedRegion(region);
+                setBorderForMergedRegion(sheet, region);
+            }
+
+            col++;
+        }
+    }
+
+    private void createCell(Row row, int col, String value, CellStyle style) {
+        Cell cell = row.createCell(col);
+        cell.setCellValue(value);
+        cell.setCellStyle(style);
+    }
+
+    private void setBorderForMergedRegion(
+            Sheet sheet,
+            CellRangeAddress region
+    ) {
+        RegionUtil.setBorderTop(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderBottom(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderLeft(BorderStyle.THIN, region, sheet);
+        RegionUtil.setBorderRight(BorderStyle.THIN, region, sheet);
+    }
+
+    private void applyBorderForColumns(
+            Sheet sheet,
+            Workbook workbook,
+            int fromCol,
+            int toCol,
+            int fromRow,
+            int toRow
+    ) {
+        CellStyle borderStyle = createBorderStyle(workbook, false);
+
+        for (int c = fromCol; c <= toCol; c++) {
+            for (int r = fromRow; r <= toRow; r++) {
+
+                Row row = sheet.getRow(r);
+                if (row == null) row = sheet.createRow(r);
+
+                Cell cell = row.getCell(c);
+                if (cell == null) cell = row.createCell(c);
+
+                cell.setCellStyle(borderStyle);
+            }
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+
+        if (cell == null) {
+            return "";
+        }
+
+        try {
+            return switch (cell.getCellType()) {
+
+                case STRING -> cell.getStringCellValue().trim();
+
+                case NUMERIC -> {
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        yield cell.getDateCellValue().toString();
+                    }
+                    yield String.valueOf(cell.getNumericCellValue());
+                }
+
+                case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+
+                case FORMULA -> {
+                    yield switch (cell.getCachedFormulaResultType()) {
+                        case STRING -> cell.getStringCellValue().trim();
+                        case NUMERIC -> String.valueOf(cell.getNumericCellValue());
+                        case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+                        default -> "";
+                    };
+                }
+
+                case BLANK, _NONE, ERROR -> "";
+
+                default -> "";
+            };
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
 }
