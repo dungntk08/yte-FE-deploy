@@ -11,7 +11,7 @@
 
 #### ❌ Lỗi 1: CORS Error
 ```
-Access to XMLHttpRequest at 'http://localhost:8080/api/...' from origin 'http://localhost:3000' 
+Access to XMLHttpRequest at 'http://localhost:8088/api/...' from origin 'http://localhost:3000' 
 has been blocked by CORS policy
 ```
 
@@ -44,7 +44,7 @@ Sau đó **restart backend**.
 
 #### ❌ Lỗi 2: ERR_CONNECTION_REFUSED
 ```
-GET http://localhost:8080/api/medical-campaigns net::ERR_CONNECTION_REFUSED
+GET http://localhost:8088/api/medical-campaigns net::ERR_CONNECTION_REFUSED
 ```
 
 **Nguyên nhân**: Backend chưa chạy hoặc chạy sai port
@@ -55,14 +55,14 @@ GET http://localhost:8080/api/medical-campaigns net::ERR_CONNECTION_REFUSED
    # Trong terminal backend
    mvn spring-boot:run
    ```
-2. Kiểm tra backend chạy trên port 8080
-3. Test API trực tiếp: `curl http://localhost:8080/api/medical-campaigns`
+2. Kiểm tra backend chạy trên port 8088
+3. Test API trực tiếp: `curl http://localhost:8088/api/medical-campaigns`
 
 ---
 
 #### ❌ Lỗi 3: 404 Not Found
 ```
-GET http://localhost:8080/api/medical-campaigns 404 (Not Found)
+GET http://localhost:8088/api/medical-campaigns 404 (Not Found)
 ```
 
 **Nguyên nhân**: API endpoint không tồn tại hoặc controller chưa được map đúng
@@ -144,7 +144,7 @@ mvn spring-boot:run
 
 ```
 Started Application in X seconds
-Tomcat started on port(s): 8080 (http)
+Tomcat started on port(s): 8088 (http)
 ```
 ➡️ Backend đã khởi động thành công
 
@@ -166,7 +166,7 @@ java.lang.NullPointerException
 
 ```bash
 # Test lấy danh sách đợt khám
-curl http://localhost:8080/api/medical-campaigns
+curl http://localhost:8088/api/medical-campaigns
 
 # Nếu thành công sẽ trả về JSON array []
 ```
@@ -176,7 +176,7 @@ curl http://localhost:8080/api/medical-campaigns
 1. Mở Postman
 2. Tạo request mới:
    - Method: GET
-   - URL: `http://localhost:8080/api/medical-campaigns`
+   - URL: `http://localhost:8088/api/medical-campaigns`
 3. Click **Send**
 4. Kiểm tra response
 
@@ -191,7 +191,7 @@ curl http://localhost:8080/api/medical-campaigns
 
 ### Nội dung đúng
 ```env
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_BASE_URL=http://localhost:8088/api
 ```
 
 ### Lưu ý
@@ -214,21 +214,21 @@ VITE v5.x.x  ready in xxx ms
 ```
 
 ### Backend port
-Mặc định Spring Boot chạy trên port **8080**
+Mặc định Spring Boot chạy trên port **8088**
 
 ```bash
 # Xem trong terminal backend
-Tomcat started on port(s): 8080 (http)
+Tomcat started on port(s): 8088 (http)
 ```
 
 ### Nếu port bị conflict
 ```bash
 # Kiểm tra port đang được sử dụng
 # Windows
-netstat -ano | findstr :8080
+netstat -ano | findstr :8088
 
 # Linux/Mac
-lsof -i :8080
+lsof -i :8088
 
 # Kill process nếu cần
 # Windows
@@ -244,7 +244,7 @@ kill -9 <PID>
 
 ### ☑️ 1. Backend
 - [ ] Backend đang chạy? (`mvn spring-boot:run`)
-- [ ] Port 8080 hoạt động? (`curl http://localhost:8080/api/medical-campaigns`)
+- [ ] Port 8088 hoạt động? (`curl http://localhost:8088/api/medical-campaigns`)
 - [ ] CORS đã cấu hình?
 - [ ] Không có lỗi trong backend logs?
 
@@ -296,7 +296,7 @@ Mở http://localhost:5173 - Giao diện sẽ hiển thị (không có dữ li�
 
 **Bước 1**: Backend có chạy không?
 ```bash
-curl http://localhost:8080/api/medical-campaigns
+curl http://localhost:8088/api/medical-campaigns
 ```
 
 **Bước 2**: Frontend có build không?

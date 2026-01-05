@@ -368,7 +368,7 @@ public class CorsConfig {
 
 ```properties
 # Server Port
-server.port=8080
+server.port=8088
 
 # Database Configuration (PostgreSQL/MySQL)
 spring.datasource.url=jdbc:postgresql://localhost:5432/health_management
@@ -407,7 +407,7 @@ cp .env.example .env
 
 Nội dung file `.env`:
 ```env
-VITE_API_BASE_URL=http://localhost:8080/api
+VITE_API_BASE_URL=http://localhost:8088/api
 ```
 
 ### 3. Cấu trúc Service Files
@@ -454,7 +454,7 @@ const template = await medicalResultService.downloadTemplate(campaignId);
 
 **Giải pháp**:
 1. Kiểm tra Console (F12) để xem lỗi
-2. Đảm bảo backend đang chạy trên port 8080
+2. Đảm bảo backend đang chạy trên port 8088
 3. Kiểm tra file `.env` có đúng URL backend
 4. App đã được cấu hình để không crash khi backend chưa chạy (chỉ log lỗi ra console)
 
@@ -473,7 +473,7 @@ const template = await medicalResultService.downloadTemplate(campaignId);
 
 **Giải pháp**:
 1. Chạy backend: `mvn spring-boot:run`
-2. Kiểm tra backend chạy trên đúng port 8080
+2. Kiểm tra backend chạy trên đúng port 8088
 3. Test API bằng Postman hoặc curl
 
 ### Vấn đề 4: Import Excel thất bại
@@ -493,7 +493,7 @@ const template = await medicalResultService.downloadTemplate(campaignId);
 - [ ] Thêm CORS Configuration
 - [ ] Chạy backend: `mvn spring-boot:run` hoặc IDE
 - [ ] Test API với Postman/curl
-- [ ] Kiểm tra backend chạy trên port 8080
+- [ ] Kiểm tra backend chạy trên port 8088
 
 ### Frontend
 - [ ] Chạy `npm install`
@@ -518,10 +518,10 @@ const template = await medicalResultService.downloadTemplate(campaignId);
 
 ```bash
 # 1. Lấy danh sách đợt khám
-curl http://localhost:8080/api/medical-campaigns
+curl http://localhost:8088/api/medical-campaigns
 
 # 2. Tạo đợt khám mới
-curl -X POST http://localhost:8080/api/medical-campaigns \
+curl -X POST http://localhost:8088/api/medical-campaigns \
   -H "Content-Type: application/json" \
   -d '{
     "schoolId": 1,
@@ -533,10 +533,10 @@ curl -X POST http://localhost:8080/api/medical-campaigns \
   }'
 
 # 3. Lấy danh sách học sinh theo đợt khám
-curl http://localhost:8080/api/students/campaign/1
+curl http://localhost:8088/api/students/campaign/1
 
 # 4. Tạo học sinh mới
-curl -X POST http://localhost:8080/api/students \
+curl -X POST http://localhost:8088/api/students \
   -H "Content-Type: application/json" \
   -d '{
     "campaignId": 1,
@@ -547,10 +547,10 @@ curl -X POST http://localhost:8080/api/students \
   }'
 
 # 5. Export Excel (tải file)
-curl -OJ "http://localhost:8080/api/medical-results/export?campaignId=1"
+curl -OJ "http://localhost:8088/api/medical-results/export?campaignId=1"
 
 # 6. Download template
-curl -OJ http://localhost:8080/api/medical-results/export-template/1
+curl -OJ http://localhost:8088/api/medical-results/export-template/1
 ```
 
 ---
