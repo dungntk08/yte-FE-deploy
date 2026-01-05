@@ -6,6 +6,8 @@ import sk.ytr.modules.entity.Student;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,6 +44,9 @@ public class StudentResponseDTO {
 
     /** Nội dung thông báo về gia đình */
     private String notifyFamily;
+
+    /** Kết quả khám của học sinh */
+    private List<MedicalResultDetailResponseDTO> medicalResults;
 
     public static StudentResponseDTO fromEntity(Student student) {
         if (student == null) {

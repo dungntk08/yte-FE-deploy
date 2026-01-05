@@ -5,9 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import sk.ytr.modules.dto.request.StudentRequestDTO;
+import sk.ytr.modules.dto.response.MedicalResultDetailResponseDTO;
 import sk.ytr.modules.dto.response.StudentResponseDTO;
 import sk.ytr.modules.entity.*;
 import sk.ytr.modules.repository.*;
+import sk.ytr.modules.service.MedicalIndicatorService;
+import sk.ytr.modules.service.MedicalResultDetailService;
+import sk.ytr.modules.service.MedicalSubIndicatorService;
 import sk.ytr.modules.service.StudentService;
 import sk.ytr.modules.utils.DateUtils;
 import sk.ytr.modules.validate.StudentServiceValidate;
@@ -31,9 +35,11 @@ public class StudentServiceImpl implements StudentService {
     private final MedicalSubIndicatorRepository medicalSubIndicatorRepository;
     private final MedicalResultDetailRepository medicalResultDetailRepository;
     @Lazy
-    private final MedicalIndicatorServiceImpl medicalIndicatorService;
+    private final MedicalIndicatorService medicalIndicatorService;
     @Lazy
-    private final MedicalSubIndicatorServiceImpl medicalSubIndicatorService;
+    private final MedicalSubIndicatorService medicalSubIndicatorService;
+    @Lazy
+    private final MedicalResultDetailService medicalResultDetailService;
     /**
      * Tạo mới một học sinh.
      *
@@ -185,10 +191,15 @@ public class StudentServiceImpl implements StudentService {
      */
     @Override
     public List<StudentResponseDTO> getStudentByCampaignId(Long campaignId) {
-        return studentRepository.findByCampaignId(campaignId)
+        List<StudentResponseDTO> result = studentRepository.findByCampaignId(campaignId)
                 .stream()
                 .map(StudentResponseDTO::fromEntity)
                 .toList();
+        for(StudentResponseDTO student : result){
+            List<MedicalResultDetailResponseDTO> medicalResults = medicalResultDetailService.getMedicalResultDetailByStudentId(student.getId());
+            student.setMedicalResults(medicalResults);
+        }
+        return result;
     }
 }
 
