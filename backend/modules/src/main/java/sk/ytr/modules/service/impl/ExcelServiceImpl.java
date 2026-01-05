@@ -276,7 +276,7 @@ public class ExcelServiceImpl implements ExcelService {
             List<MedicalResultDetail> toSave = new ArrayList<>();
 
             // Skip header (3 rows)
-            for (int i = 3; i <= sheet.getLastRowNum(); i++) {
+            for (int i = 5; i <= sheet.getLastRowNum(); i++) {
 
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
