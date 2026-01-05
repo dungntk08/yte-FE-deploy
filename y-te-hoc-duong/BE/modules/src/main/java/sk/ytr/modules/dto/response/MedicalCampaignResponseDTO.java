@@ -48,7 +48,7 @@ public class MedicalCampaignResponseDTO {
     private Integer totalStudentsExamined;
 
     /** Cấu hình chỉ tiêu khám áp dụng cho đợt khám*/
-    private CampaignMedicalConfig campaignMedicalConfig;
+    private CampaignMedicalConfigResponseDTO campaignMedicalConfig;
 
 
     public static MedicalCampaignResponseDTO fromEntity(MedicalCampaign entity) {
@@ -63,7 +63,9 @@ public class MedicalCampaignResponseDTO {
                 .note(entity.getNote())
                 .totalStudents(entity.getTotalStudents())
                 .totalStudentsExamined(entity.getTotalStudentsExamined())
-                .campaignMedicalConfig(entity.getCampaignMedicalConfig())
+                .campaignMedicalConfig(CampaignMedicalConfigResponseDTO.fromEntity(
+                        entity.getCampaignMedicalConfig()
+                ))
                 .build();
     }
 }

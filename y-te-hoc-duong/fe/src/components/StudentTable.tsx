@@ -46,7 +46,9 @@ export function StudentTable() {
         setSelectedCampaignId(periods[0].id!);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách đợt khám');
+      console.error('Error loading exam periods:', err);
+      // Không hiển thị lỗi ngay khi load, chỉ log ra console
+      // setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách đợt khám');
     }
   };
 
@@ -57,7 +59,10 @@ export function StudentTable() {
       const data = await studentService.getStudentsByCampaign(campaignId);
       setStudents(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách học sinh');
+      console.error('Error loading students:', err);
+      // Không hiển thị lỗi ngay, để user có thể sử dụng các chức năng khác
+      setStudents([]);
+      // setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách học sinh');
     } finally {
       setLoading(false);
     }
