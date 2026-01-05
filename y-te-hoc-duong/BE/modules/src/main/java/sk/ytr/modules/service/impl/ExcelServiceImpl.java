@@ -271,8 +271,9 @@ public class ExcelServiceImpl implements ExcelService {
                     medicalResultDetailRepository.findByCampaignId(campaignId)
                             .stream()
                             .collect(Collectors.toMap(
-                                    this::buildKeyForExport,
-                                    Function.identity()
+                                    this::buildKeyForImport,
+                                    Function.identity(),
+                                    (oldVal, newVal) -> oldVal   // <<< QUAN TRỌNG
                             ));
 
             List<MedicalResultDetail> toSave = new ArrayList<>();
@@ -295,7 +296,7 @@ public class ExcelServiceImpl implements ExcelService {
                     newStudent.setCampaign(campaign);
                     newStudent.setIdentityNumber(studentIdentityNumber);
                     newStudent.setFullName(getStringCell(row.getCell(1)));
-                    newStudent.setDob(DateUtils.convertStringToDate(getStringCell(row.getCell(2))));
+                    newStudent.setDob(parseDateCell(row.getCell(2)));
                     if(getStringCell(row.getCell(3)) == null || getStringCell(row.getCell(3)).isEmpty()){
                         newStudent.setGender(GenderTypeEnum.FEMALE);
                     }
@@ -1145,4 +1146,36 @@ public class ExcelServiceImpl implements ExcelService {
             return null;
         }
     }
+
+    private Date parseDateCell(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+
+        try {
+            // Excel lưu date dạng numeric
+            if (cell.getCellType() == CellType.NUMERIC) {
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue();
+                }
+                // fallback numeric date
+                return DateUtil.getJavaDate(cell.getNumericCellValue());
+            }
+
+            // Excel lưu dạng text
+            if (cell.getCellType() == CellType.STRING) {
+                String value = cell.getStringCellValue();
+                if (value == null || value.trim().isEmpty()) {
+                    return null;
+                }
+                return DateUtils.convertStringToDate(value.trim());
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể parse ngày sinh từ cell: " + cell, e);
+        }
+
+        return null;
+    }
+
 }
