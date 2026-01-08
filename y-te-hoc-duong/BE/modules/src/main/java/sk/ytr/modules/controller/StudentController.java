@@ -7,6 +7,8 @@ import sk.ytr.modules.dto.request.StudentRequestDTO;
 import sk.ytr.modules.dto.response.StudentResponseDTO;
 import sk.ytr.modules.service.StudentService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 @RestController
 @RequestMapping("/api/students")
@@ -36,13 +38,15 @@ public class StudentController {
     }
 
     @GetMapping("/campaign/{campaignId}")
-    public List<StudentResponseDTO> getByCampaignId(
+    public Page<StudentResponseDTO> getByCampaignId(
             @PathVariable Long campaignId,
-            @RequestParam(required = false) String keyword
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long schoolId,
+            @RequestParam(required = false) Long schoolClassId,
+            Pageable pageable
     ) {
-        return service.getStudentByCampaignId(campaignId, keyword);
+        return service.getAllStudentByCampaignIdAndFilter(campaignId, keyword, schoolId, schoolClassId, pageable);
     }
-
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
         service.deleteStudent(id);

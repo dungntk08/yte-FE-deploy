@@ -15,4 +15,5 @@ public class SchoolClassResponseDTO {
     private Integer grade;
     private Integer totalStudent;
     private String schoolYear;
+    private Long schoolId;
 }

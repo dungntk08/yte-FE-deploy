@@ -59,6 +59,9 @@ public class StudentResponseDTO {
     /** Lớp học */
     private Long schoolClassId;
 
+    /** Trường học */
+    private String schoolName;
+
 
     public static StudentResponseDTO fromEntity(Student student) {
         if (student == null) {
@@ -91,6 +94,17 @@ public class StudentResponseDTO {
                                 ? student.getSchoolClass().getId()
                                 : null
                 )
+                .schoolName(
+                        student.getSchool() != null
+                                ? student.getSchool().getSchoolName()
+                                : null
+                )
+                .className(
+                        student.getSchoolClass() != null
+                                ? student.getSchoolClass().getClassName()
+                                : null
+                )
                 .build();
+
     }
 }

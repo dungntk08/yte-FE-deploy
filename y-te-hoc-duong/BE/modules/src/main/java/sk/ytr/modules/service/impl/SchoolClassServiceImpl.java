@@ -20,36 +20,48 @@ public class SchoolClassServiceImpl implements SchoolClassService {
     private final SchoolRepository schoolRepository;
 
     @Override
-    public SchoolClassResponseDTO createSchoolClass(SchoolClassRequestDTO request) {
-        try {
-            School school = schoolRepository.findById(request.getSchoolId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy trường học"));
-            SchoolClass schoolClass = SchoolClass.builder()
-                    .school(school)
-                    .className(request.getClassName())
-                    .grade(request.getGrade())
-                    .totalStudent(request.getTotalStudent())
-                    .schoolYear(request.getSchoolYear())
-                    .build();
-            schoolClass = schoolClassRepository.save(schoolClass);
-            return SchoolClassResponseDTO.builder()
-                    .id(schoolClass.getId())
-                    .className(schoolClass.getClassName())
-                    .grade(schoolClass.getGrade())
-                    .totalStudent(schoolClass.getTotalStudent())
-                    .schoolYear(schoolClass.getSchoolYear())
-                    .build();
-        }catch (Exception e){
-            throw new RuntimeException("Lỗi khi tạo lớp học: " + e.getMessage());
+public SchoolClassResponseDTO createSchoolClass(SchoolClassRequestDTO request) {
+    try {
+        // Validate duplicate class name within the same school
+        if (schoolClassRepository.findByClassNameAndSchoolId(request.getClassName(), request.getSchoolId()).isPresent()) {
+            throw new RuntimeException("Tên lớp đã tồn tại trong trường này");
         }
+
+        School school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trường học"));
+        SchoolClass schoolClass = SchoolClass.builder()
+                .school(school)
+                .className(request.getClassName())
+                .grade(request.getGrade())
+                .totalStudent(request.getTotalStudent())
+                .schoolYear(request.getSchoolYear())
+                .build();
+        schoolClass = schoolClassRepository.save(schoolClass);
+        return SchoolClassResponseDTO.builder()
+                .id(schoolClass.getId())
+                .className(schoolClass.getClassName())
+                .grade(schoolClass.getGrade())
+                .totalStudent(schoolClass.getTotalStudent())
+                .schoolYear(schoolClass.getSchoolYear())
+                .build();
+    } catch (Exception e) {
+        throw new RuntimeException("Lỗi khi tạo lớp học: " + e.getMessage());
     }
+}
 
-    @Override
-    public SchoolClassResponseDTO updateSchoolClass(Long id, SchoolClassRequestDTO request) {
-        try {
-
+@Override
+public SchoolClassResponseDTO updateSchoolClass(Long id, SchoolClassRequestDTO request) {
+    try {
         SchoolClass schoolClass = schoolClassRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
+
+        // Validate duplicate class name within the same school
+        if (schoolClassRepository.findByClassNameAndSchoolId(request.getClassName(), request.getSchoolId())
+                .filter(existingClass -> !existingClass.getId().equals(id))
+                .isPresent()) {
+            throw new RuntimeException("Tên lớp đã tồn tại trong trường này");
+        }
+
         School school = schoolRepository.findById(request.getSchoolId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy trường học"));
         schoolClass.setSchool(school);
@@ -64,12 +76,12 @@ public class SchoolClassServiceImpl implements SchoolClassService {
                 .grade(schoolClass.getGrade())
                 .totalStudent(schoolClass.getTotalStudent())
                 .schoolYear(schoolClass.getSchoolYear())
+                .schoolId(school.getId())
                 .build();
-        } catch (Exception e){
-            throw  new RuntimeException("Lỗi khi cập nhật lớp học: " + e.getMessage());
-        }
+    } catch (Exception e) {
+        throw new RuntimeException("Lỗi khi cập nhật lớp học: " + e.getMessage());
     }
-
+}
     @Override
     public void deleteSchoolClass(Long id) {
         schoolClassRepository.deleteById(id);
@@ -86,6 +98,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
                     .grade(schoolClass.getGrade())
                     .totalStudent(schoolClass.getTotalStudent())
                     .schoolYear(schoolClass.getSchoolYear())
+                    .schoolId(schoolClass.getSchool().getId())
                     .build();
         }catch (Exception e){
             throw new RuntimeException("Lỗi khi lấy thông tin lớp học: " + e.getMessage());
@@ -103,6 +116,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
                             .grade(schoolClass.getGrade())
                             .totalStudent(schoolClass.getTotalStudent())
                             .schoolYear(schoolClass.getSchoolYear())
+                            .schoolId(schoolClass.getSchool().getId())
                             .build())
                     .toList();
         } catch (Exception e) {
@@ -121,6 +135,7 @@ public class SchoolClassServiceImpl implements SchoolClassService {
                         .grade(schoolClass.getGrade())
                         .totalStudent(schoolClass.getTotalStudent())
                         .schoolYear(schoolClass.getSchoolYear())
+                        .schoolId(schoolClass.getSchool().getId())
                         .build())
                 .toList();
         } catch (Exception e){

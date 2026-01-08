@@ -17,6 +17,8 @@ import sk.ytr.modules.service.StudentService;
 import sk.ytr.modules.utils.DateUtils;
 import sk.ytr.modules.validate.StudentServiceValidate;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -232,5 +234,20 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    @Override
+    public Page<StudentResponseDTO> getAllStudentByCampaignIdAndFilter(Long campaignId, String keyword, Long schoolId, Long schoolClassId, Pageable pageable) {
+        try {
+            String safeKeyword = (keyword == null || keyword.trim().isEmpty()) ? null : keyword.trim();
+
+            Page<Student> students = studentRepository.searchByCampaignAndFilters(
+                    campaignId, safeKeyword, schoolId, schoolClassId, pageable
+            );
+
+            return students.map(StudentResponseDTO::fromEntity);
+        } catch (Exception e) {
+            log.error("Lỗi lấy danh sách học sinh theo đợt khám với bộ lọc", e);
+            throw new RuntimeException("Lấy danh sách học sinh thất bại: " + e.getMessage());
+        }
+    }
 }
 

@@ -56,14 +56,14 @@ public class MedicalResultExcelController {
     }
 
     @PostMapping(
-            value = "/import-excel/{campaignId}",
+            value = "/import-excel/{campaignId}/{schoolId}/{classId}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<?> importExcel(
             @PathVariable Long campaignId,
             @RequestPart("file") MultipartFile file,
-            @PathVariable Long SchoolId,
-            @PathVariable Long ClassId
+            @PathVariable Long schoolId,
+            @PathVariable Long classId
     ) {
 
         if (file == null || file.isEmpty()) {
@@ -87,7 +87,7 @@ public class MedicalResultExcelController {
                     excelService.parseIndicatorHeader(sheet, campaignId);
 
             //  Import
-            excelService.importExcel(file, campaignId, headerMetaMap, SchoolId, ClassId);
+            excelService.importExcel(file, campaignId, headerMetaMap, schoolId, classId);
 
             return ResponseEntity.ok("Import kết quả khám thành công");
 
@@ -101,13 +101,11 @@ public class MedicalResultExcelController {
 
     @GetMapping("/export-template/{campaignId}")
     public ResponseEntity<Resource> exportTemplateExcel(
-            @PathVariable Long campaignId,
-            @PathVariable Long SchoolId,
-            @PathVariable Long ClassId
+            @PathVariable Long campaignId
     ) {
 
         ByteArrayInputStream stream =
-                excelService.exportTemplateExcel(campaignId, SchoolId, ClassId);
+                excelService.exportTemplateExcel(campaignId);
 
         InputStreamResource resource = new InputStreamResource(stream);
 

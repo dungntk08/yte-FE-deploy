@@ -33,9 +33,7 @@ public interface ExcelService {
             Long campaignId
     );
 
-    ByteArrayInputStream exportTemplateExcel(Long campaignId,
-                                             Long SchoolId,
-                                             Long ClassId);
+    ByteArrayInputStream exportTemplateExcel(Long campaignId);
 
 //    byte[] exportCampaignSummaryReportToWord(Long campaignId,
 //                                             Long SchoolId,
