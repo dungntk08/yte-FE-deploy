@@ -3,8 +3,10 @@ package sk.ytr.modules.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import sk.ytr.modules.dto.excel.MedicalResultReport;
 import sk.ytr.modules.dto.request.MedicalResultDetailRequestDTO;
 import sk.ytr.modules.dto.response.MedicalResultDetailResponseDTO;
+import sk.ytr.modules.dto.response.TotalMedicalIndicatorResultResponseDTO;
 import sk.ytr.modules.service.MedicalResultDetailService;
 
 import java.util.List;
@@ -40,6 +42,18 @@ public class MedicalResultDetailController {
     public List<MedicalResultDetailResponseDTO> getByStudentId(
             @PathVariable Long studentId) {
         return service.getMedicalResultDetailByStudentId(studentId);
+    }
+
+    @GetMapping("/totalMedical/{campaignId}")
+    public List<TotalMedicalIndicatorResultResponseDTO> getTotalMedicalIndicatorResultsByCampaignId(
+            @PathVariable Long campaignId) {
+        return service.getTotalMedicalIndicatorResultsByCampaignId(campaignId);
+    }
+
+    @GetMapping("/medicalReport/{campaignId}")
+    public MedicalResultReport generateMedicalResultReportByCampaignId(
+            @PathVariable Long campaignId) {
+        return service.generateMedicalResultReportByCampaignId(campaignId);
     }
 
     @DeleteMapping("/{id}")

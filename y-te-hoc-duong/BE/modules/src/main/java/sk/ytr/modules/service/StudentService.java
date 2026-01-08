@@ -16,7 +16,7 @@ public interface StudentService {
 
     void deleteStudent(Long id);
 
-    List<StudentResponseDTO> getStudentByCampaignId(Long campaignId);
+    List<StudentResponseDTO> getStudentByCampaignId(Long campaignId, String keyWord);
 
     void createMedicalResultForStudent(Student student);
 }

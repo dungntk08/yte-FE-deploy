@@ -84,6 +84,16 @@ public class CampaignMedicalConfigController {
     }
 
     /**
+     * Lấy danh sách cấu hình nhóm chỉ tiêu theo cấu hình đợt khám
+     */
+    @GetMapping("getByCampaignId/config/{campaignId}")
+    public List<CampaignMedicalConfigSubResponseDTO> getByCampaignId(
+            @PathVariable Long campaignId) {
+
+        return service.getByCampaignId(campaignId);
+    }
+
+    /**
      * Xóa cấu hình nhóm chỉ tiêu khám
      */
     @DeleteMapping("deleteCampaignMedicalConfigSub/{id}")

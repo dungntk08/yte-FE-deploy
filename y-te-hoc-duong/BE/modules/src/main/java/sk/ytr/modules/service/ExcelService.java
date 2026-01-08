@@ -2,6 +2,7 @@ package sk.ytr.modules.service;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 import sk.ytr.modules.dto.excel.ExcelMedicalColumn;
 import sk.ytr.modules.dto.excel.IndicatorHeaderMeta;
@@ -20,7 +21,9 @@ public interface ExcelService {
     void importExcel(
             MultipartFile file,
             Long campaignId,
-            Map<Integer, IndicatorHeaderMeta> headerMetaMap
+            Map<Integer, IndicatorHeaderMeta> headerMetaMap,
+            Long SchoolId,
+            Long ClassId
     );
 
     ByteArrayInputStream exportExcel(Long campaignId);
@@ -30,5 +33,11 @@ public interface ExcelService {
             Long campaignId
     );
 
-    ByteArrayInputStream exportTemplateExcel(Long campaignId);
+    ByteArrayInputStream exportTemplateExcel(Long campaignId,
+                                             Long SchoolId,
+                                             Long ClassId);
+
+//    byte[] exportCampaignSummaryReportToWord(Long campaignId,
+//                                             Long SchoolId,
+//                                             Long ClassId);
 }

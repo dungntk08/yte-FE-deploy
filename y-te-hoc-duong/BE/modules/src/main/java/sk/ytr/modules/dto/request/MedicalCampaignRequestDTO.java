@@ -17,9 +17,6 @@ import java.util.Date;
 @Builder
 public class MedicalCampaignRequestDTO {
 
-    /** ID trường tổ chức khám */
-    private Long schoolId;
-
     /** Năm học (VD: 2025-2026) */
     private String schoolYear;
 

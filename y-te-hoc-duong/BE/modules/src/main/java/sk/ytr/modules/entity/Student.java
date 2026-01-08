@@ -67,6 +67,19 @@ public class Student extends BaseEntity {
     @Column(name = "notify_family", length = 1000)
     private String notifyFamily;
 
+    /** Lớp học */
+    @Column(name = "class_name", length = 100)
+    private String className;
+
+    /** Trường học */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_id")
+    private School school;
+
+    /** Lớp học */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_class_id")
+    private SchoolClass schoolClass;
 
     /**
      * Cập nhật thông tin học sinh từ RequestDTO
@@ -104,6 +117,7 @@ public class Student extends BaseEntity {
         if (request.getNotifyFamily() != null) {
             this.notifyFamily = request.getNotifyFamily();
         }
+
     }
 
 }

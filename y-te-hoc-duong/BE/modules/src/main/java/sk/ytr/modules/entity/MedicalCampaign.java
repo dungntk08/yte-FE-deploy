@@ -26,11 +26,6 @@ public class MedicalCampaign extends BaseEntity {
     @SequenceGenerator(name = "medical_campaign_seq", sequenceName = "medical_campaign_seq", allocationSize = 1)
     private Long id;
 
-    /** Trường học tổ chức đợt khám */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "school_id", nullable = false)
-    private School school;
-
     /** Năm học áp dụng (VD: 2025-2026) */
     @Column(name = "school_year", length = 20)
     private String schoolYear;

@@ -3,7 +3,9 @@ package sk.ytr.modules.service.impl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import sk.ytr.modules.dto.request.SchoolRequestDTO;
 import sk.ytr.modules.dto.response.SchoolResponseDTO;
+import sk.ytr.modules.entity.School;
 import sk.ytr.modules.repository.SchoolRepository;
 import sk.ytr.modules.service.SchoolService;
 
@@ -40,6 +42,28 @@ public class SchoolServiceImpl implements SchoolService {
                 .stream()
                 .map(SchoolResponseDTO::fromEntity)
                 .toList();
+    }
+
+    @Override
+    public SchoolResponseDTO createSchool(SchoolRequestDTO request) {
+        School school = School.builder()
+                .schoolCode(request.getSchoolCode())
+                .schoolName(request.getSchoolName())
+                .address(request.getAddress())
+                .build();
+        school = schoolRepository.save(school);
+        return SchoolResponseDTO.fromEntity(school);
+    }
+
+    @Override
+    public SchoolResponseDTO updateSchool(Long id, SchoolRequestDTO request) {
+        School school = schoolRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy trường học"));
+        school.setSchoolCode(request.getSchoolCode());
+        school.setSchoolName(request.getSchoolName());
+        school.setAddress(request.getAddress());
+        school = schoolRepository.save(school);
+        return SchoolResponseDTO.fromEntity(school);
     }
 }
 

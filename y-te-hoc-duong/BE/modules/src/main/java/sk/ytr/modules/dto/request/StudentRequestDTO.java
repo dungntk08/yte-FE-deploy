@@ -2,9 +2,14 @@ package sk.ytr.modules.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.*;
 import sk.ytr.modules.constant.GenderTypeEnum;
 import sk.ytr.modules.entity.MedicalCampaign;
+import sk.ytr.modules.entity.School;
+import sk.ytr.modules.entity.SchoolClass;
 import sk.ytr.modules.entity.Student;
 
 import java.math.BigDecimal;
@@ -48,6 +53,15 @@ public class StudentRequestDTO {
     /** Nội dung thông báo về gia đình */
     private String notifyFamily;
 
+    /** Lớp học */
+    private String className;
+
+    /** Trường học */
+    private Long schoolId;
+
+    /** Lớp học */
+    private Long schoolClassId;
+
     /**
      * Convert RequestDTO → Entity
      */
@@ -62,6 +76,7 @@ public class StudentRequestDTO {
                 .weight(this.weight)
                 .height(this.height)
                 .notifyFamily(this.notifyFamily)
+                .className(this.className)
                 .build();
     }
 }

@@ -61,7 +61,9 @@ public class MedicalResultExcelController {
     )
     public ResponseEntity<?> importExcel(
             @PathVariable Long campaignId,
-            @RequestPart("file") MultipartFile file
+            @RequestPart("file") MultipartFile file,
+            @PathVariable Long SchoolId,
+            @PathVariable Long ClassId
     ) {
 
         if (file == null || file.isEmpty()) {
@@ -85,7 +87,7 @@ public class MedicalResultExcelController {
                     excelService.parseIndicatorHeader(sheet, campaignId);
 
             //  Import
-            excelService.importExcel(file, campaignId, headerMetaMap);
+            excelService.importExcel(file, campaignId, headerMetaMap, SchoolId, ClassId);
 
             return ResponseEntity.ok("Import kết quả khám thành công");
 
@@ -99,11 +101,13 @@ public class MedicalResultExcelController {
 
     @GetMapping("/export-template/{campaignId}")
     public ResponseEntity<Resource> exportTemplateExcel(
-            @PathVariable Long campaignId
+            @PathVariable Long campaignId,
+            @PathVariable Long SchoolId,
+            @PathVariable Long ClassId
     ) {
 
         ByteArrayInputStream stream =
-                excelService.exportTemplateExcel(campaignId);
+                excelService.exportTemplateExcel(campaignId, SchoolId, ClassId);
 
         InputStreamResource resource = new InputStreamResource(stream);
 
@@ -119,5 +123,21 @@ public class MedicalResultExcelController {
                 )
                 .body(resource);
     }
+//    @GetMapping("/export/summary-word/{campaignId}")
+//    public ResponseEntity<byte[]> exportSummaryWord(@PathVariable Long campaignId) {
+//
+//        byte[] data = excelService.exportCampaignSummaryReportToWord(campaignId);
+//
+//        return ResponseEntity.ok()
+//                .header(HttpHeaders.CONTENT_DISPOSITION,
+//                        "attachment; filename=bien_ban_kham_hoc_sinh.docx")
+//                .contentType(
+//                        MediaType.parseMediaType(
+//                                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+//                        )
+//                )
+//                .body(data);
+//    }
+
 
 }

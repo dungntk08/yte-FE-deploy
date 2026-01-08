@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import sk.ytr.modules.dto.request.MedicalCampaignRequestDTO;
 import sk.ytr.modules.dto.response.MedicalCampaignResponseDTO;
+import sk.ytr.modules.entity.CampaignMedicalConfig;
 import sk.ytr.modules.entity.MedicalCampaign;
 import sk.ytr.modules.entity.School;
+import sk.ytr.modules.repository.CampaignMedicalConfigRepository;
 import sk.ytr.modules.repository.MedicalCampaignRepository;
 import sk.ytr.modules.repository.SchoolRepository;
 import sk.ytr.modules.service.MedicalCampaignService;
@@ -23,7 +25,7 @@ public class MedicalCampaignServiceImpl implements MedicalCampaignService {
     private final MedicalCampaignRepository medicalCampaignRepository;
     private final SchoolRepository schoolRepository;
     private final CampaignMedicalServiceValidate campaignMedicalServiceValidate;
-
+    private final CampaignMedicalConfigRepository campaignMedicalConfigRepository;
     /**
      * Tạo mới một đợt khám y tế.
      *
@@ -34,11 +36,10 @@ public class MedicalCampaignServiceImpl implements MedicalCampaignService {
     public MedicalCampaignResponseDTO createMedicalCampaign(MedicalCampaignRequestDTO request) {
         try {
             campaignMedicalServiceValidate.validateCreateRequest(request);
-            School school = schoolRepository.findById(request.getSchoolId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy trường"));
+            // Lấy cấu hình chỉ tiêu khám mặc định (giả sử ID = 1)
+            CampaignMedicalConfig config = campaignMedicalConfigRepository.findById(1L).orElseThrow(() -> new RuntimeException("Không tìm thấy cấu hình chỉ tiêu khám"));
 
             MedicalCampaign campaign = MedicalCampaign.builder()
-                    .school(school)
                     .schoolYear(request.getSchoolYear())
                     .campaignName(request.getCampaignName())
                     .startDate(request.getStartDate())
@@ -47,7 +48,7 @@ public class MedicalCampaignServiceImpl implements MedicalCampaignService {
                     .note(request.getNote())
                     .totalStudents(request.getTotalStudents())
                     .totalStudentsExamined(request.getTotalStudentsExamined())
-                    .campaignMedicalConfig(request.getCampaignMedicalConfig())
+                    .campaignMedicalConfig(config)
                     .build();
 
             campaign.setCreatedBy("ADMIN"); // tạm thời

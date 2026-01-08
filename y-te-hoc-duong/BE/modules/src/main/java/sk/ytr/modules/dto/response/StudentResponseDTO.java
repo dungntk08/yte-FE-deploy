@@ -50,6 +50,16 @@ public class StudentResponseDTO {
     /** Kết quả khám của học sinh */
     private List<MedicalResultDetailResponseDTO> medicalResults;
 
+    /** Lớp học */
+    private String className;
+
+    /** Trường học */
+    private Long schoolId;
+
+    /** Lớp học */
+    private Long schoolClassId;
+
+
     public static StudentResponseDTO fromEntity(Student student) {
         if (student == null) {
             return null;
@@ -70,6 +80,17 @@ public class StudentResponseDTO {
                 .weight(student.getWeight())
                 .height(student.getHeight())
                 .notifyFamily(student.getNotifyFamily())
+                .className(student.getClassName())
+                .schoolId(
+                        student.getSchool() != null
+                                ? student.getSchool().getId()
+                                : null
+                )
+                .schoolClassId(
+                        student.getSchoolClass() != null
+                                ? student.getSchoolClass().getId()
+                                : null
+                )
                 .build();
     }
 }

@@ -2,19 +2,23 @@ package sk.ytr.modules.service.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import sk.ytr.modules.dto.excel.DiseaseReportDTO;
+import sk.ytr.modules.dto.excel.MedicalResultReport;
 import sk.ytr.modules.dto.request.MedicalResultDetailRequestDTO;
+import sk.ytr.modules.dto.response.MedicalCampaignResponseDTO;
 import sk.ytr.modules.dto.response.MedicalResultDetailResponseDTO;
-import sk.ytr.modules.entity.CampaignMedicalConfig;
-import sk.ytr.modules.entity.MedicalResultDetail;
-import sk.ytr.modules.entity.Student;
-import sk.ytr.modules.repository.CampaignMedicalConfigRepository;
-import sk.ytr.modules.repository.MedicalResultDetailRepository;
-import sk.ytr.modules.repository.StudentRepository;
+import sk.ytr.modules.dto.response.TotalMedicalIndicatorResultResponseDTO;
+import sk.ytr.modules.dto.response.TotalMedicalSubIndicatorResultResponseDTO;
+import sk.ytr.modules.entity.*;
+import sk.ytr.modules.repository.*;
+import sk.ytr.modules.service.MedicalCampaignService;
 import sk.ytr.modules.service.MedicalResultDetailService;
 import sk.ytr.modules.utils.DateUtils;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,7 +28,10 @@ public class MedicalResultDetailServiceImpl implements MedicalResultDetailServic
     private final MedicalResultDetailRepository medicalResultDetailRepository;
     private final StudentRepository studentRepository;
     private final CampaignMedicalConfigRepository campaignMedicalConfigRepository;
-
+    private final MedicalIndicatorRepository medicalIndicatorRepository;
+    private final MedicalSubIndicatorRepository medicalSubIndicatorRepository;
+    @Lazy
+    private final MedicalCampaignService medicalCampaignService;
     /**
      * Tạo mới kết quả khám bệnh.
      *
@@ -119,9 +126,155 @@ public class MedicalResultDetailServiceImpl implements MedicalResultDetailServic
      */
     @Override
     public List<MedicalResultDetailResponseDTO> getMedicalResultDetailByStudentId(Long studentId) {
-        return medicalResultDetailRepository.findByStudentId(studentId)
-                .stream()
-                .map(MedicalResultDetailResponseDTO::fromEntity)
-                .toList();
+        try {
+            List<MedicalResultDetailResponseDTO> result = medicalResultDetailRepository.findByStudentId(studentId)
+                    .stream()
+                    .map(MedicalResultDetailResponseDTO::fromEntity)
+                    .toList();
+
+            Map<Long, MedicalIndicator> indicatorMap = medicalIndicatorRepository.findAll()
+                    .stream()
+                    .collect(Collectors.toMap(MedicalIndicator::getId, indicator -> indicator));
+
+            Map<Long, MedicalSubIndicator> subIndicatorMap = medicalSubIndicatorRepository.findAll()
+                    .stream()
+                    .collect(Collectors.toMap(MedicalSubIndicator::getId, subIndicator -> subIndicator));
+
+            for (MedicalResultDetailResponseDTO dto : result) {
+                MedicalIndicator indicator = indicatorMap.get(dto.getMedicalIndicatorId());
+                if (indicator != null) {
+                    dto.setMedicalGroupName(indicator.getGroup().getGroupName());
+                    dto.setMedicalIndicatorName(indicator.getIndicatorName());
+
+                    if (indicator.getHasSubIndicator() != null && indicator.getHasSubIndicator()) {
+                        MedicalSubIndicator subIndicator = subIndicatorMap.get(dto.getMedicalSubIndicatorId());
+                        if (subIndicator != null) {
+                            dto.setMedicalSubIndicatorName(subIndicator.getSubName());
+                        }
+                    }
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy danh sách kết quả khám theo học sinh", e);
+            throw new RuntimeException("Lấy danh sách kết quả khám thất bại: " + e.getMessage());
+        }
     }
+
+    @Override
+    public List<TotalMedicalIndicatorResultResponseDTO> getTotalMedicalIndicatorResultsByCampaignId(Long campaignId) {
+        try {
+            List<MedicalResultDetail> details =
+                    medicalResultDetailRepository.findByCampaignId(campaignId);
+
+            // Map indicatorId -> DTO kết quả
+            Map<Long, TotalMedicalIndicatorResultResponseDTO> indicatorResultMap = new LinkedHashMap<>();
+
+            // Map subIndicatorId -> DTO kết quả
+            Map<Long, TotalMedicalSubIndicatorResultResponseDTO> subIndicatorResultMap = new HashMap<>();
+
+            // Load indicator & subIndicator
+            Map<Long, MedicalIndicator> indicatorMap =
+                    medicalIndicatorRepository.findAll()
+                            .stream()
+                            .collect(Collectors.toMap(MedicalIndicator::getId, i -> i));
+
+            Map<Long, MedicalSubIndicator> subIndicatorMap =
+                    medicalSubIndicatorRepository.findAll()
+                            .stream()
+                            .collect(Collectors.toMap(MedicalSubIndicator::getId, s -> s));
+
+            for (MedicalResultDetail detail : details) {
+
+                // Không tính nếu không mắc bệnh
+                if (!Boolean.TRUE.equals(detail.getResultValue())) {
+                    continue;
+                }
+
+                Long indicatorId = detail.getMedicalIndicatorId();
+                Long subIndicatorId = detail.getMedicalSubIndicatorId();
+
+                MedicalIndicator indicator = indicatorMap.get(indicatorId);
+                if (indicator == null) continue;
+
+                // Lấy hoặc tạo DTO chỉ tiêu bệnh
+                TotalMedicalIndicatorResultResponseDTO indicatorDTO =
+                        indicatorResultMap.computeIfAbsent(indicatorId, id -> {
+                            TotalMedicalIndicatorResultResponseDTO dto = new TotalMedicalIndicatorResultResponseDTO();
+                            dto.setIndicatorName(indicator.getIndicatorName());
+                            dto.setTotalCount(0L);
+                            dto.setHasSubIndicators(Boolean.TRUE.equals(indicator.getHasSubIndicator()));
+                            dto.setSubIndicatorResults(new ArrayList<>());
+                            return dto;
+                        });
+
+                // ===== CÓ SUB INDICATOR =====
+                if (subIndicatorId != null) {
+
+                    MedicalSubIndicator subIndicator = subIndicatorMap.get(subIndicatorId);
+                    if (subIndicator == null) continue;
+
+                    TotalMedicalSubIndicatorResultResponseDTO subDTO =
+                            subIndicatorResultMap.computeIfAbsent(subIndicatorId, id -> {
+                                TotalMedicalSubIndicatorResultResponseDTO dto =
+                                        new TotalMedicalSubIndicatorResultResponseDTO();
+                                dto.setSubIndicatorName(subIndicator.getSubName());
+                                dto.setTotalCount(0L);
+
+                                indicatorDTO.getSubIndicatorResults().add(dto);
+                                return dto;
+                            });
+
+                    // +1 cho subIndicator
+                    subDTO.setTotalCount(subDTO.getTotalCount() + 1);
+
+                    // +1 cho indicator cha
+                    indicatorDTO.setTotalCount(indicatorDTO.getTotalCount() + 1);
+
+                }
+                // ===== KHÔNG CÓ SUB INDICATOR =====
+                else {
+                    indicatorDTO.setTotalCount(indicatorDTO.getTotalCount() + 1);
+                }
+            }
+
+            return new ArrayList<>(indicatorResultMap.values());
+
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy tổng kết kết quả khám theo đợt khám", e);
+            throw new RuntimeException("Lấy tổng kết kết quả khám thất bại: " + e.getMessage());
+        }
+    }
+
+    public MedicalResultReport generateMedicalResultReportByCampaignId(Long campaignId) {
+        try {
+            // Lấy dữ liệu đợt khám
+            MedicalResultReport result = new MedicalResultReport();
+
+            MedicalCampaignResponseDTO campaign =
+                    medicalCampaignService.getMedicalCampaignById(campaignId);
+
+            result.setMedicalCampaignResponseDTO(campaign);
+            // Lấy tổng kết bệnh
+            List<TotalMedicalIndicatorResultResponseDTO> indicatorResults =
+                    getTotalMedicalIndicatorResultsByCampaignId(campaignId);
+
+            // Map sang dataset cho Jasper
+            List<DiseaseReportDTO> diseaseDataset =
+                    DiseaseReportMapper.mapToDiseaseDataset(indicatorResults);
+
+            result.setDiseaseReports(diseaseDataset);
+            result.setAverageExamined(0.0F);
+            result.setObesityCount(0);
+            result.setOverWeightCount(0);
+            result.setUnderWeightCount(0);
+            return result;
+        }catch (Exception e) {
+            log.error("Lỗi khi tạo báo cáo kết quả khám theo đợt khám", e);
+            throw new RuntimeException("Tạo báo cáo kết quả khám thất bại: " + e.getMessage());
+        }
+    }
+
 }

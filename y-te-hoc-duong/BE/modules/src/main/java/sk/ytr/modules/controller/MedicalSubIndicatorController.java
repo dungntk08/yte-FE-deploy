@@ -8,6 +8,7 @@ import sk.ytr.modules.dto.response.MedicalSubIndicatorResponseDTO;
 import sk.ytr.modules.service.MedicalSubIndicatorService;
 
 import java.util.List;
+
 @RestController
 @RequestMapping("/api/medical-sub-indicators")
 @CrossOrigin

@@ -234,6 +234,39 @@ public class CampaignMedicalConfigServiceImpl implements CampaignMedicalConfigSe
         return result;
     }
 
+
+    @Override
+    public List<CampaignMedicalConfigSubResponseDTO> getByCampaignId(Long campaignId){
+        try {
+            MedicalCampaign campaign = campaignRepository.findById(campaignId)
+                    .orElseThrow(() -> new IllegalArgumentException("Đợt khám không tồn tại"));
+            CampaignMedicalConfig campaignMedicalConfig = campaignMedicalConfigRepository.findById(campaign.getCampaignMedicalConfig().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Cấu hình đợt khám không tồn tại"));
+
+            List<CampaignMedicalConfigSub> configSubs = configSubRepository.findByCampaignMedicalConfig_IdOrderByDisplayOrderAsc(campaignMedicalConfig.getId());
+            List<Long> medicalGroupIds = configSubs.stream()
+                    .map(sub -> sub.getMedicalGroup().getId())
+                    .collect(Collectors.toList());
+
+            List<CampaignMedicalConfigSubResponseDTO> result = configSubs.stream()
+                    .map(CampaignMedicalConfigSubResponseDTO::fromEntity)
+                    .collect(Collectors.toList());
+
+            List<MedicalIndicatorResponseDTO> indicatorsResult = getMedicalIndicatorResponseDTOSByMedicalGroupIds(medicalGroupIds);
+            for (CampaignMedicalConfigSubResponseDTO item : result) {
+                List<MedicalIndicatorResponseDTO> filteredIndicators = indicatorsResult.stream()
+                        .filter(indicator -> indicator.getMedicalGroupId().equals(item.getMedicalGroup().getId()))
+                        .collect(Collectors.toList());
+                item.setMedicalIndicators(filteredIndicators);
+            }
+
+            return result;
+        }catch (Exception e){
+            log.error("Lỗi lấy cấu hình nhóm chỉ tiêu theo ID đợt khám", e);
+            throw new RuntimeException("Lấy cấu hình nhóm chỉ tiêu theo ID đợt khám thất bại: " + e.getMessage());
+        }
+    }
+
     /**
      * Lấy danh sách các `MedicalIndicatorResponseDTO` dựa trên danh sách ID của nhóm chỉ tiêu y tế.
      *

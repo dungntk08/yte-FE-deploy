@@ -20,12 +20,6 @@ public class MedicalCampaignResponseDTO {
     /** ID đợt khám */
     private Long id;
 
-    /** Thông tin trường */
-    private SchoolResponseDTO school;
-
-    /** Năm học */
-    private String schoolYear;
-
     /** Tên đợt khám */
     private String campaignName;
 
@@ -54,8 +48,6 @@ public class MedicalCampaignResponseDTO {
     public static MedicalCampaignResponseDTO fromEntity(MedicalCampaign entity) {
         return MedicalCampaignResponseDTO.builder()
                 .id(entity.getId())
-                .school(SchoolResponseDTO.fromEntity(entity.getSchool()))
-                .schoolYear(entity.getSchoolYear())
                 .campaignName(entity.getCampaignName())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())

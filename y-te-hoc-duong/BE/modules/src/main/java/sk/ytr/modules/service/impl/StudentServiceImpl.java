@@ -41,6 +41,10 @@ public class StudentServiceImpl implements StudentService {
     private final MedicalSubIndicatorService medicalSubIndicatorService;
     @Lazy
     private final MedicalResultDetailService medicalResultDetailService;
+    private final SchoolClassRepository schoolClassRepository;
+    private final SchoolRepository schoolRepository;
+
+
     /**
      * Tạo mới một học sinh.
      *
@@ -56,6 +60,14 @@ public class StudentServiceImpl implements StudentService {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy đợt khám"));
 
             Student student = request.toEntity(campaign);
+            SchoolClass schoolClass = schoolClassRepository.findById(request.getSchoolClassId()).orElse(null);
+            if(schoolClass!=null){
+            student.setSchoolClass(schoolClass);
+            }
+            School school = schoolRepository.findById(request.getSchoolId()).orElse(null);
+            if(school!=null) {
+                student.setSchool(school);
+            }
             student.setCreatedDate(DateUtils.getNow());
             student.setCreatedBy("ADMIN"); // Thay "ADMIN" bằng người dùng thực tế nếu có
             student.setModifiedDate(DateUtils.getNow());
@@ -192,16 +204,33 @@ public class StudentServiceImpl implements StudentService {
      * @return Danh sách DTO phản hồi chứa thông tin các học sinh trong đợt khám.
      */
     @Override
-    public List<StudentResponseDTO> getStudentByCampaignId(Long campaignId) {
-        List<StudentResponseDTO> result = studentRepository.findByCampaignId(campaignId)
-                .stream()
-                .map(StudentResponseDTO::fromEntity)
-                .toList();
-        for(StudentResponseDTO student : result){
-            List<MedicalResultDetailResponseDTO> medicalResults = medicalResultDetailService.getMedicalResultDetailByStudentId(student.getId());
-            student.setMedicalResults(medicalResults);
+    public List<StudentResponseDTO> getStudentByCampaignId(Long campaignId, String keyWord) {
+        try {
+            String safeKeyword =
+                    (keyWord == null || keyWord.trim().isEmpty())
+                            ? null
+                            : keyWord.trim();
+
+            List<Student> students =
+                    studentRepository.searchByCampaignAndKeyword(campaignId, safeKeyword);
+
+            List<StudentResponseDTO> result =
+                    students.stream()
+                            .map(StudentResponseDTO::fromEntity)
+                            .toList();
+
+            for (StudentResponseDTO student : result) {
+                List<MedicalResultDetailResponseDTO> medicalResults =
+                        medicalResultDetailService.getMedicalResultDetailByStudentId(student.getId());
+                student.setMedicalResults(medicalResults);
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("Lỗi lấy danh sách học sinh theo đợt khám", e);
+            throw new RuntimeException("Lấy danh sách học sinh thất bại: " + e.getMessage());
         }
-        return result;
     }
+
 }
 

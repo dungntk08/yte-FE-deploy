@@ -37,8 +37,10 @@ public class StudentController {
 
     @GetMapping("/campaign/{campaignId}")
     public List<StudentResponseDTO> getByCampaignId(
-            @PathVariable Long campaignId) {
-        return service.getStudentByCampaignId(campaignId);
+            @PathVariable Long campaignId,
+            @RequestParam(required = false) String keyword
+    ) {
+        return service.getStudentByCampaignId(campaignId, keyword);
     }
 
     @DeleteMapping("/{id}")

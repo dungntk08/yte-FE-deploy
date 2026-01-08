@@ -31,4 +31,7 @@ public interface CampaignMedicalConfigService {
     /** Lấy danh sách theo cấu hình đợt khám */
     List<CampaignMedicalConfigSubResponseDTO> getByCampaignMedicalConfigId(Long campaignMedicalConfigId);
 
+    /** Lấy danh sách theo cấu hình đợt khám */
+    List<CampaignMedicalConfigSubResponseDTO> getByCampaignId(Long campaignId);
+
 }

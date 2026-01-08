@@ -33,10 +33,6 @@ public class StudentServiceValidate {
             throw new IllegalArgumentException("ngày sinh không được để trống");
         }
 
-        if (request.getDob().after(new Date())) {
-            throw new IllegalArgumentException("ngày sinh không hợp lệ");
-        }
-
         if (request.getIdentityNumber() == null || request.getIdentityNumber().isBlank()) {
             throw new IllegalArgumentException("CCCD / mã định danh không được để trống");
         }

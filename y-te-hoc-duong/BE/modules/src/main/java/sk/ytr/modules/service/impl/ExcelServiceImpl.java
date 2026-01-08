@@ -3,6 +3,12 @@ package sk.ytr.modules.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+import net.sf.jasperreports.engine.export.ooxml.JRDocxExporter;
+import net.sf.jasperreports.export.SimpleDocxExporterConfiguration;
+import net.sf.jasperreports.export.SimpleExporterInput;
+import net.sf.jasperreports.export.SimpleOutputStreamExporterOutput;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.RegionUtil;
@@ -11,15 +17,21 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sk.ytr.modules.constant.GenderTypeEnum;
+import sk.ytr.modules.dto.excel.DiseaseReportDTO;
 import sk.ytr.modules.dto.excel.ExcelMedicalColumn;
 import sk.ytr.modules.dto.excel.IndicatorHeaderMeta;
+import sk.ytr.modules.dto.response.MedicalCampaignResponseDTO;
+import sk.ytr.modules.dto.response.TotalMedicalIndicatorResultResponseDTO;
 import sk.ytr.modules.entity.*;
 import sk.ytr.modules.repository.*;
 import sk.ytr.modules.service.ExcelService;
+import sk.ytr.modules.service.MedicalCampaignService;
+import sk.ytr.modules.service.MedicalResultDetailService;
 import sk.ytr.modules.utils.DateUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.Function;
@@ -41,6 +53,13 @@ public class ExcelServiceImpl implements ExcelService {
     private final MedicalIndicatorServiceImpl medicalIndicatorService;
     @Lazy
     private final MedicalSubIndicatorServiceImpl medicalSubIndicatorService;
+    @Lazy
+    private final MedicalCampaignService medicalCampaignService;
+    @Lazy
+    private final MedicalResultDetailService medicalResultDetailService;
+    private static final DataFormatter DATA_FORMATTER = new DataFormatter();
+    private final SchoolClassRepository schoolClassRepository;
+    private final SchoolRepository schoolRepository;
     /**
      * Tạo header Excel 3 dòng:
      * - Dòng 0: Nhóm khám
@@ -250,7 +269,9 @@ public class ExcelServiceImpl implements ExcelService {
     public void importExcel(
             MultipartFile file,
             Long campaignId,
-            Map<Integer, IndicatorHeaderMeta> headerMetaMap
+            Map<Integer, IndicatorHeaderMeta> headerMetaMap,
+            Long SchoolId,
+            Long ClassId
     ) {
 
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -275,7 +296,8 @@ public class ExcelServiceImpl implements ExcelService {
                                     Function.identity(),
                                     (oldVal, newVal) -> oldVal   // <<< QUAN TRỌNG
                             ));
-
+            School school = schoolRepository.findById(SchoolId).orElse(null);
+            SchoolClass  schoolClass = schoolClassRepository.findById(ClassId).orElse(null);
             List<MedicalResultDetail> toSave = new ArrayList<>();
 
             // Skip header (3 rows)
@@ -289,25 +311,17 @@ public class ExcelServiceImpl implements ExcelService {
                 Student student = studentMap.get(studentIdentityNumber);
                 if (student == null && !studentIdentityNumber.isEmpty()) {
                     Student newStudent = new Student();
-                    newStudent.setUpdatedBy("ADMIN");
-                    newStudent.setCreatedBy("ADMIN");
+                    newStudent.setUpdatedBy("SYSTEM");
+                    newStudent.setCreatedBy("SYSTEM");
                     newStudent.setCreatedDate(DateUtils.getNow());
                     newStudent.setModifiedDate(DateUtils.getNow());
-                    newStudent.setCampaign(campaign);
-                    newStudent.setIdentityNumber(studentIdentityNumber);
-                    newStudent.setFullName(getStringCell(row.getCell(1)));
-                    newStudent.setDob(parseDateCell(row.getCell(2)));
-                    if(getStringCell(row.getCell(3)) == null || getStringCell(row.getCell(3)).isEmpty()){
-                        newStudent.setGender(GenderTypeEnum.FEMALE);
-                    }
-                    else{
-                        newStudent.setGender(GenderTypeEnum.MALE);
-                    }
-                    newStudent.setAddress(getStringCell(row.getCell(5)));
-                    newStudent.setHeight( getNumericCellValueAsBigDecimal(row.getCell(8)) );
-                    newStudent.setWeight( getNumericCellValueAsBigDecimal(row.getCell(7)) );
-                    student = studentRepository.save(newStudent);
+                    student = updateStudentWhenImport(newStudent, campaign, studentIdentityNumber, row, school, schoolClass);
                     studentMap.put(studentIdentityNumber, newStudent);
+                }
+                else if(student != null) {
+                        student.setUpdatedBy("SYSTEM");
+                        student.setModifiedDate(DateUtils.getNow());
+                        student = updateStudentWhenImport(student, campaign, studentIdentityNumber, row, school, schoolClass);
                 }
                 if(student == null ) {
                     continue;
@@ -317,7 +331,9 @@ public class ExcelServiceImpl implements ExcelService {
 
                     Cell cell = row.getCell(entry.getKey());
                     if (cell == null) continue;
-
+                    if(student.getFullName().equalsIgnoreCase("Nguyễn Anh Nhi")){
+                        int a = 3;
+                    }
                     Boolean value = parseBooleanCell(cell);
                     if (value == null) value = false;
 
@@ -335,6 +351,10 @@ public class ExcelServiceImpl implements ExcelService {
                     MedicalResultDetail detail =
                             existingMap.computeIfAbsent(key, k -> {
                                 MedicalResultDetail d = new MedicalResultDetail();
+                                d.setUpdatedBy("SYSTEM");
+                                d.setCreatedBy("SYSTEM");
+                                d.setCreatedDate(DateUtils.getNow());
+                                d.setModifiedDate(DateUtils.getNow());
                                 d.setStudent(finalStudent);
                                 d.setCampaign(campaign);
                                 d.setMedicalGroupId(meta.getGroupId());
@@ -344,6 +364,8 @@ public class ExcelServiceImpl implements ExcelService {
                             });
 
                     detail.setResultValue(value);
+                    detail.setUpdatedBy("SYSTEM");
+                    detail.setModifiedDate(DateUtils.getNow());
                 }
             }
 
@@ -354,6 +376,33 @@ public class ExcelServiceImpl implements ExcelService {
             log.error("Lỗi import Excel", e);
             throw new RuntimeException("Lỗi import Excel: " + e.getMessage());
         }
+    }
+
+    /* Cập nhật thông tin học sinh khi import */
+    private Student updateStudentWhenImport(Student newStudent,
+                                            MedicalCampaign campaign,
+                                            String studentIdentityNumber,
+                                            Row row,
+                                            School school,
+                                            SchoolClass SchoolClass) {
+        Student student;
+        newStudent.setSchool(school);
+        newStudent.setSchoolClass(SchoolClass);
+        newStudent.setCampaign(campaign);
+        newStudent.setIdentityNumber(studentIdentityNumber);
+        newStudent.setFullName(getStringCell(row.getCell(1)));
+        newStudent.setDob(parseDateCell(row.getCell(2)));
+        if(getStringCell(row.getCell(3)) == null || getStringCell(row.getCell(3)).isEmpty()){
+            newStudent.setGender(GenderTypeEnum.FEMALE);
+        }
+        else{
+            newStudent.setGender(GenderTypeEnum.MALE);
+        }
+        newStudent.setAddress(getStringCell(row.getCell(5)));
+        newStudent.setHeight( getNumericCellValueAsBigDecimal(row.getCell(7)) );
+        newStudent.setWeight( getNumericCellValueAsBigDecimal(row.getCell(8)) );
+        student = studentRepository.save(newStudent);
+        return student;
     }
 
 
@@ -509,6 +558,9 @@ public class ExcelServiceImpl implements ExcelService {
                 row.createCell(col++).setCellValue(student.getDob().toString());
                 row.createCell(col++).setCellValue(student.getGender() == GenderTypeEnum.MALE ? "X" : "");
                 row.createCell(col++).setCellValue(student.getGender() == GenderTypeEnum.FEMALE ? "X" : "");
+                row.createCell(col++).setCellValue(
+                        student.getClassName() != null ? student.getClassName() : ""
+                );
                 row.createCell(col++).setCellValue(student.getAddress());
                 row.createCell(col++).setCellValue(student.getIdentityNumber());
                 row.createCell(col++).setCellValue(
@@ -738,7 +790,9 @@ public class ExcelServiceImpl implements ExcelService {
      * @return ByteArrayInputStream của file Excel
      */
     @Override
-    public ByteArrayInputStream exportTemplateExcel(Long campaignId) {
+    public ByteArrayInputStream exportTemplateExcel(Long campaignId,
+                                                    Long schoolId,
+                                                    Long ClassId) {
 
         try (Workbook workbook = new XSSFWorkbook()) {
 
@@ -752,8 +806,8 @@ public class ExcelServiceImpl implements ExcelService {
                     medicalCampaignRepository.findById(campaignId)
                             .orElseThrow(() -> new RuntimeException("Campaign không tồn tại"));
 
-            String className = campaign.getSchool() != null ? campaign.getCampaignName() : "……";
-            String schoolName = campaign.getSchool() != null ? campaign.getSchool().getSchoolName() : "……………………";
+            String className = schoolClassRepository.findById(ClassId).get().getClassName() != null ? campaign.getCampaignName() : "……";
+            String schoolName = schoolRepository.findById(schoolId).get().getSchoolName() != null ? campaign.getSchool().getSchoolName() : "……………………";
 
             // ========= 2. DÒNG TIÊU ĐỀ =========
             Row titleRow = sheet.createRow(0);
@@ -1122,30 +1176,16 @@ public class ExcelServiceImpl implements ExcelService {
         if (cell == null) return null;
 
         try {
-            return switch (cell.getCellType()) {
-                case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
-                case STRING -> {
-                    String value = cell.getStringCellValue().trim();
-                    if (value.isEmpty()) yield null;
-                    yield new BigDecimal(value);
-                }
-                case FORMULA -> {
-                    yield switch (cell.getCachedFormulaResultType()) {
-                        case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
-                        case STRING -> {
-                            String v = cell.getStringCellValue().trim();
-                            if (v.isEmpty()) yield null;
-                            yield new BigDecimal(v);
-                        }
-                        default -> null;
-                    };
-                }
-                default -> null;
-            };
+            String value = DATA_FORMATTER.formatCellValue(cell).trim();
+            if (value.isEmpty()) return null;
+
+            value = value.replace(",", ".");
+            return new BigDecimal(value);
         } catch (Exception e) {
             return null;
         }
     }
+
 
     private Date parseDateCell(Cell cell) {
         if (cell == null) {
@@ -1177,5 +1217,152 @@ public class ExcelServiceImpl implements ExcelService {
 
         return null;
     }
+
+    public byte[] exportCampaignSummaryReportForPDF(Long campaignId) {
+        try {
+            // Lấy dữ liệu đợt khám
+            MedicalCampaignResponseDTO campaign =
+                    medicalCampaignService.getMedicalCampaignById(campaignId);
+
+            // Lấy tổng kết bệnh
+            List<TotalMedicalIndicatorResultResponseDTO> indicatorResults =
+                    medicalResultDetailService.getTotalMedicalIndicatorResultsByCampaignId(campaignId);
+
+            // Map sang dataset cho Jasper
+            List<DiseaseReportDTO> diseaseDataset =
+                    DiseaseReportMapper.mapToDiseaseDataset(indicatorResults);
+
+            JRBeanCollectionDataSource diseaseDataSource =
+                    new JRBeanCollectionDataSource(diseaseDataset);
+
+            // Params Jasper
+            Map<String, Object> params = new HashMap<>();
+            params.put("P_SCHOOL_NAME", campaign.getSchool().getSchoolName());
+            params.put("P_TOTAL_CLASS", 0);
+            params.put("P_TOTAL_STUDENT", campaign.getTotalStudents());
+            params.put("P_TOTAL_STUDENT_EXAM", campaign.getTotalStudentsExamined());
+
+            String examRate = campaign.getTotalStudents() == 0
+                    ? "0%"
+                    : Math.round(
+                    campaign.getTotalStudentsExamined() * 100.0
+                            / campaign.getTotalStudents()
+            ) + "%";
+
+            params.put("P_EXAM_RATE", examRate);
+            params.put("P_SCHOOL_YEAR", campaign.getSchoolYear());
+
+            // TODO: nếu có thống kê dinh dưỡng riêng thì thay vào
+            params.put("P_NUTRITION_UNDERWEIGHT", 0);
+            params.put("P_NUTRITION_OVERWEIGHT", 0);
+            params.put("P_NUTRITION_OBESE", 0);
+
+            params.put("P_DISEASE_DATA", diseaseDataSource);
+
+            // Load Jasper
+            InputStream jrxmlStream =
+                    getClass().getResourceAsStream(
+                            "/reports/Bien_ban_thong_nhat_kham_hs.jrxml"
+                    );
+
+            if (jrxmlStream == null) {
+                throw new RuntimeException("Không tìm thấy file JRXML");
+            }
+
+            JasperReport jasperReport =
+                    JasperCompileManager.compileReport(jrxmlStream);
+
+            JasperPrint jasperPrint =
+                    JasperFillManager.fillReport(
+                            jasperReport,
+                            params,
+                            new JREmptyDataSource()
+                    );
+
+            return JasperExportManager.exportReportToPdf(jasperPrint);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Xuất biên bản khám thất bại", e);
+        }
+    }
+
+//    public byte[] exportCampaignSummaryReportToWord(Long campaignId) {
+//
+//        try {
+//            // ===== 1. LẤY DỮ LIỆU =====
+//            MedicalCampaignResponseDTO campaign =
+//                    medicalCampaignService.getMedicalCampaignById(campaignId);
+//
+//            List<TotalMedicalIndicatorResultResponseDTO> indicatorResults =
+//                    medicalResultDetailService.getTotalMedicalIndicatorResultsByCampaignId(campaignId);
+//
+//            List<DiseaseReportDTO> diseaseDataset =
+//                    DiseaseReportMapper.mapToDiseaseDataset(indicatorResults);
+//
+//            JRBeanCollectionDataSource diseaseDataSource =
+//                    new JRBeanCollectionDataSource(diseaseDataset);
+//
+//            // ===== 2. PARAMS =====
+//            Map<String, Object> params = new HashMap<>();
+//            params.put("P_SCHOOL_NAME", campaign.getSchool().getSchoolName());
+//            params.put("P_TOTAL_CLASS", 0);
+//            params.put("P_TOTAL_STUDENT", campaign.getTotalStudents());
+//            params.put("P_TOTAL_STUDENT_EXAM", campaign.getTotalStudentsExamined());
+//
+//            String examRate = campaign.getTotalStudents() == 0
+//                    ? "0%"
+//                    : Math.round(
+//                    campaign.getTotalStudentsExamined() * 100.0
+//                            / campaign.getTotalStudents()
+//            ) + "%";
+//
+//            params.put("P_EXAM_RATE", examRate);
+//            params.put("P_SCHOOL_YEAR", campaign.getSchoolYear());
+//
+//            params.put("P_NUTRITION_UNDERWEIGHT", 0);
+//            params.put("P_NUTRITION_OVERWEIGHT", 0);
+//            params.put("P_NUTRITION_OBESE", 0);
+//
+//            params.put("P_DISEASE_DATA", diseaseDataSource);
+//
+//            // ===== 3. LOAD JRXML =====
+//            InputStream jrxmlStream =
+//                    getClass().getResourceAsStream(
+//                            "/reports/Bien_ban_thong_nhat_kham_hs.jrxml"
+//                    );
+//
+//            if (jrxmlStream == null) {
+//                throw new RuntimeException("Không tìm thấy file JRXML");
+//            }
+//
+//            JasperReport jasperReport =
+//                    JasperCompileManager.compileReport(jrxmlStream);
+//
+//            JasperPrint jasperPrint =
+//                    JasperFillManager.fillReport(
+//                            jasperReport,
+//                            params,
+//                            new JREmptyDataSource()
+//                    );
+//
+//            // ===== 4. EXPORT WORD =====
+//            ByteArrayOutputStream out = new ByteArrayOutputStream();
+//
+//            JRDocxExporter exporter = new JRDocxExporter();
+//            exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+//            exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(out));
+//
+//            SimpleDocxExporterConfiguration config =
+//                    new SimpleDocxExporterConfiguration();
+//
+//            exporter.setConfiguration(config);
+//            exporter.exportReport();
+//
+//            return out.toByteArray();
+//
+//        } catch (Exception e) {
+//            throw new RuntimeException("Xuất biên bản khám WORD thất bại", e);
+//        }
+//    }
 
 }
