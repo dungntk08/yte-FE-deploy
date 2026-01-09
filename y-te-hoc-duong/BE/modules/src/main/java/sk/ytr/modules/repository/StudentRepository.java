@@ -12,6 +12,8 @@ import java.util.List;
 public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findByCampaignId(Long campaignId);
 
+    List<Student> findBySchoolId(Long schoolId);
+
     boolean existsByCampaign_IdAndIdentityNumber(Long campaignId, String identityNumber);
 
     List<Student> findByCampaignIdOrderByFullNameAsc(Long campaignId);
@@ -72,6 +74,15 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
             Pageable pageable
     );
 
-
+    @Query("""
+        SELECT COUNT(s.id)
+        FROM Student s
+        WHERE s.campaign.id = :campaignId
+          AND s.school.id = :schoolId
+    """)
+    long countByCampaignAndSchool(
+            @Param("campaignId") Long campaignId,
+            @Param("schoolId") Long schoolId
+    );
 
 }

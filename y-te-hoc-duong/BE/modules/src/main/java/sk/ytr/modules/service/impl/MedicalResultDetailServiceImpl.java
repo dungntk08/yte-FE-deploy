@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import sk.ytr.modules.constant.NutritionStatus;
 import sk.ytr.modules.dto.excel.DiseaseReportDTO;
 import sk.ytr.modules.dto.excel.MedicalResultReport;
 import sk.ytr.modules.dto.request.MedicalResultDetailRequestDTO;
@@ -17,6 +18,8 @@ import sk.ytr.modules.service.MedicalCampaignService;
 import sk.ytr.modules.service.MedicalResultDetailService;
 import sk.ytr.modules.utils.DateUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +35,7 @@ public class MedicalResultDetailServiceImpl implements MedicalResultDetailServic
     private final MedicalSubIndicatorRepository medicalSubIndicatorRepository;
     @Lazy
     private final MedicalCampaignService medicalCampaignService;
+
     /**
      * Tạo mới kết quả khám bệnh.
      *
@@ -248,6 +252,7 @@ public class MedicalResultDetailServiceImpl implements MedicalResultDetailServic
         }
     }
 
+    @Override
     public MedicalResultReport generateMedicalResultReportByCampaignId(Long campaignId) {
         try {
             // Lấy dữ liệu đợt khám
@@ -264,16 +269,79 @@ public class MedicalResultDetailServiceImpl implements MedicalResultDetailServic
             // Map sang dataset cho Jasper
             List<DiseaseReportDTO> diseaseDataset =
                     DiseaseReportMapper.mapToDiseaseDataset(indicatorResults);
+            List<Student> allStudents =
+                    studentRepository.findByCampaignId(campaignId);
 
             result.setDiseaseReports(diseaseDataset);
-            result.setAverageExamined(0.0F);
-            result.setObesityCount(0);
-            result.setOverWeightCount(0);
-            result.setUnderWeightCount(0);
+            // Tính toán số liệu dinh dưỡng
+            int underWeight = 0;
+            int overWeight = 0;
+            int obese = 0;
+            int normal = 0;
+
+            for (Student student : allStudents) {
+                NutritionStatus status = calculateNutritionStatus(student);
+                if (status == null) continue;
+
+                switch (status) {
+                    case UNDER_WEIGHT -> underWeight++;
+                    case OVER_WEIGHT -> overWeight++;
+                    case OBESE -> obese++;
+                    case NORMAL -> normal++;
+                }
+            }
+
+            result.setUnderWeightCount(underWeight);
+            result.setOverWeightCount(overWeight);
+            result.setObesityCount(obese);
+
+            // Tỷ lệ % học sinh đã được đánh giá
+            int evaluatedCount = underWeight + overWeight + obese + normal;
+            float averageExamined = allStudents.isEmpty()
+                    ? 0f
+                    : (evaluatedCount * 100f / allStudents.size());
+
+            result.setAverageExamined(averageExamined);
+
             return result;
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Lỗi khi tạo báo cáo kết quả khám theo đợt khám", e);
             throw new RuntimeException("Tạo báo cáo kết quả khám thất bại: " + e.getMessage());
+        }
+    }
+
+    private NutritionStatus calculateNutritionStatus(Student student) {
+
+        if (student.getWeight() == null || student.getHeight() == null) {
+            return null; // thiếu dữ liệu → bỏ qua
+        }
+
+        BigDecimal weight = student.getWeight(); // kg
+        BigDecimal heightCm = student.getHeight(); // cm
+
+        if (heightCm.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        // height (m)
+        BigDecimal heightMeter = heightCm
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+        // BMI = kg / (m*m)
+        BigDecimal bmi = weight.divide(
+                heightMeter.multiply(heightMeter),
+                2,
+                RoundingMode.HALF_UP
+        );
+
+        if (bmi.compareTo(BigDecimal.valueOf(18.5)) < 0) {
+            return NutritionStatus.UNDER_WEIGHT;
+        } else if (bmi.compareTo(BigDecimal.valueOf(23)) < 0) {
+            return NutritionStatus.NORMAL;
+        } else if (bmi.compareTo(BigDecimal.valueOf(25)) < 0) {
+            return NutritionStatus.OVER_WEIGHT;
+        } else {
+            return NutritionStatus.OBESE;
         }
     }
 

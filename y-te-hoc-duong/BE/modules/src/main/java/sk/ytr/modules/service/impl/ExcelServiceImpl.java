@@ -383,10 +383,16 @@ public class ExcelServiceImpl implements ExcelService {
     }
 
     private void saveMedicalCampaignSchool(School school, MedicalCampaign campaign) {
-        MedicalCampaignSchool campaignSchool = new MedicalCampaignSchool();
-        campaignSchool.setSchool(school);
-        campaignSchool.setMedicalCampaign(campaign);
-        medicalCampaignSchoolRepository.save(campaignSchool);
+        Boolean exists = medicalCampaignSchoolRepository.existsByMedicalCampaignAndMedicalGroup(
+                school.getId(), campaign.getId()
+        );
+
+        if (!exists) {
+            MedicalCampaignSchool campaignSchool = new MedicalCampaignSchool();
+            campaignSchool.setSchool(school);
+            campaignSchool.setMedicalCampaign(campaign);
+            medicalCampaignSchoolRepository.save(campaignSchool);
+        }
     }
 
     /* Cập nhật thông tin học sinh khi import */
