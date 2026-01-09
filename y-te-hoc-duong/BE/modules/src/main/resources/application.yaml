@@ -1,6 +1,6 @@
 #Port khi chạy ứng dụng
 server:
-  port: 8088
+  port: ${PORT:8088}
   error:
     include-stacktrace: never
   ssl:
@@ -23,9 +23,9 @@ spring:
   flyway:
     enabled: false
   datasource:
-    url: jdbc:postgresql://localhost:5432/yte
-    username: postgres
-    password: 123qwe
+    url: ${DATABASE_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       connectionTimeout: 30000
